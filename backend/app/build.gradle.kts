@@ -16,6 +16,8 @@ repositories {
 }
 
 dependencies {
+
+    implementation("org.postgresql:postgresql:42.7.3")
     // Use JUnit Jupiter for testing.
     testImplementation(libs.junit.jupiter)
 
@@ -24,6 +26,7 @@ dependencies {
     // This dependency is used by the application.
     implementation(libs.guava)
 }
+
 
 // Apply a specific Java toolchain to ease working on different environments.
 java {
@@ -34,7 +37,7 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = "org.example.App"
+    mainClass = "edu.sjsu.library.App"
 }
 
 tasks.named<Test>("test") {
