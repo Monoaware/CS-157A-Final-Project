@@ -7,7 +7,6 @@ public class User {
     public String passwordhash;
     public String role;
 
-
     public User(String fname, String lname, String email, String passwordhash, String role) {
         this.fname = fname;
         this.lname = lname;
@@ -16,48 +15,18 @@ public class User {
         this.role = role;
     }
 
-    public String getFname() {
-        return fname;
-    }
+    public String getFname() { return fname;}
+    public String getLname() { return lname; }
+    public String getEmail() { return email; }
+    public String getPasswordhash() { return passwordhash; }
+    public String getRole() { return role; }
 
-    public String setFname(String fname) {
-        this.fname = fname;
-        return fname;
-    }
+    public void setFname(String fname) { this.fname = fname; }
+    public void setLname(String lname) { this.lname = lname; }
+    public void setEmail(String email) { this.email = email; }
+    public void setPasswordhash(String passwordhash) { this.passwordhash = passwordhash; }
+    public void setRole(String role) { this.role = role; }
 
-    public String getLname() {
-        return lname;
-    }
 
-    public String setLname(String lname) {
-        this.lname = lname;
-        return lname;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String setEmail(String email) {
-        this.email = email;
-        return email;
-    }
-
-    public String getPasswordhash() {
-        return passwordhash;
-    }
-
-    public String setPasswordhash(String passwordhash) {
-        this.passwordhash = passwordhash;
-        return passwordhash;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public String setRole(String role) {
-        this.role = role;
-        return role;
-    }
+    
 }
