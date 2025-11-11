@@ -13,6 +13,20 @@ public class UserDAO {
         this.connection = connection;
     }
 
+    public void createTable() throws SQLException {
+        String query = "CREATE TABLE IF NOT EXISTS Users (" +
+                       "id SERIAL PRIMARY KEY, " +
+                       "fname VARCHAR(50) NOT NULL, " +
+                       "lname VARCHAR(50) NOT NULL, " +
+                       "email VARCHAR(100) UNIQUE NOT NULL, " +
+                       "passwordhash VARCHAR(255) NOT NULL, " +
+                       "role VARCHAR(20) NOT NULL" +
+                       ")";
+        try (Statement stmt = connection.createStatement()) {
+            stmt.executeUpdate(query);
+        }
+    }
+
     // Create a new user
     public void addUser(User user) throws SQLException {
         String query = "INSERT INTO Users (id, fname, lname, email, passwordhash, role) VALUES (?, ?, ?, ?, ?, ?)";

@@ -1,4 +1,4 @@
-package test;
+package edu.sjsu.library;
 
 import edu.sjsu.library.dao.UserDAO;
 import edu.sjsu.library.models.User;
@@ -18,14 +18,16 @@ public class DAOTests {
 
         try (Connection conn = DBConnection.getConnection()) {
                 UserDAO userDAO = new UserDAO(conn);
+                userDAO.createTable();
 
                 // Test 1: Add a new user
-                User newUser = new User(1, "John", "Doe", "johndoe@example.com", "hashedpass", "student");
+                User newUser = new User(0, "John", "Doe", "johndoe@example.com", "hashedpass", "student");
+                System.out.println(newUser.getFname());
                 userDAO.addUser(newUser);
                 System.out.println("✅ Added user successfully.");
 
                 // Test 2: Retrieve user by ID
-                User retrieved = userDAO.getUserById(1);
+                User retrieved = userDAO.getUserById(0);
                 if (retrieved != null) {
                     System.out.println("✅ Retrieved user: " + retrieved.getFname() + retrieved.getLname());
                 } else {
@@ -37,8 +39,8 @@ public class DAOTests {
                 System.out.println("✅ Found " + allUsers.size() + " user(s).");
 
                 // Test 4: Delete user
-                userDAO.deleteUser(1);
-                System.out.println("✅ Deleted user with ID 1.");
+                userDAO.deleteUser(0);
+                System.out.println("✅ Deleted user with ID 0.");
 
         } catch (SQLException e) {
             e.printStackTrace();

@@ -5,7 +5,7 @@ import java.sql.*;
 public class DBConnection {
     public static Connection getConnection() {
         try{
-            return DriverManager.getConnection("jdbc:postgresql://localhost:5432/librarydb", "postgres", "postgres");
+            return DriverManager.getConnection("jdbc:postgresql://localhost:5432/librarydb?sslmode=disable", "postgres", "postgres");
 
         }
         catch (SQLException e) {

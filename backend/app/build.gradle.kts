@@ -19,7 +19,7 @@ dependencies {
 
     implementation("org.postgresql:postgresql:42.7.3")
     // Use JUnit Jupiter for testing.
-    testImplementation(libs.junit.jupiter)
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
