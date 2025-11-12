@@ -9,6 +9,8 @@ public class DBConnection {
     public static Connection getConnection() throws SQLException {
         try {
             return DriverManager.getConnection("jdbc:postgresql://localhost:5432/librarydb?sslmode=disable", "postgres", "postgres");
+        } catch (SQLException | ClassNotFoundException ex) {
+            throw new RuntimeException("Failed to obtain DB connection", ex);
         }
     }  
 }

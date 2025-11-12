@@ -22,7 +22,7 @@ public class FinePaymentNotAllowedException extends RuntimeException {
     public FinePaymentNotAllowedException(String message) {
         super(message);
     }
-    public RenewalNotAllowedException(String message, Throwable cause) {
+    public FinePaymentNotAllowedException(String message, Throwable cause) {
         super(message, cause);
     }
 }
