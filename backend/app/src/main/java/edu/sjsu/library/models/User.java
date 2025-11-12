@@ -78,7 +78,7 @@ public class User {
     }
 
     public boolean restrict() { 
-        if (this.status == UserStatus.RESTRICT) {
+        if (this.status == UserStatus.RESTRICTED) {
             throw new UserStatusChangeNotAllowedException("Cannot restrict user when already restricted.");
         }
         this.status = UserStatus.RESTRICTED; 
