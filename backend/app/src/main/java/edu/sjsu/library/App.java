@@ -1,15 +1,11 @@
 package edu.sjsu.library;
 
-import edu.sjsu.library.utils.DBConnection;
-import java.sql.Connection;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+@SpringBootApplication
 public class App {
     public static void main(String[] args) {
-        try (Connection conn = DBConnection.getConnection()) {
-            System.out.println("✅ Connected to PostgreSQL successfully!");
-        } catch (Exception e) {
-            System.out.println("❌ Connection failed!");
-            e.printStackTrace();
-        }
+        SpringApplication.run(App.class, args);
     }
 }

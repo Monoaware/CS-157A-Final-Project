@@ -9,6 +9,8 @@ public class Title {
     private String genre;
     private boolean isVisible;
 
+    public Title() {}
+    
     public Title(int titleID, String ISBN, String title, String author, int yearPublished, String genre, boolean isVisible) {
         this.ISBN = ISBN;
         this.title = title;

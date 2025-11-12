@@ -8,6 +8,8 @@ public class User {
     public String passwordhash;
     public String role;
 
+    public User() {}
+    
     // When loading pre-existing user from DB
     public User(int id, String fname, String lname, String email, String passwordhash, String role) {
         this.fname = fname;
