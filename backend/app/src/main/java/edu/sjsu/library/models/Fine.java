@@ -1,15 +1,35 @@
 package edu.sjsu.library.models;
+import edu.sjsu.library.exceptions.FinePaymentNotAllowedException;
+import edu.sjsu.library.exceptions.FineWaivementNotAllowedException;
 
+// Note: Fines must be paid in full or not at all to simplify transactions.
 public class Fine {
+    private int fineID; // Primary key (auto-increment).
     private int userID;
     private int loanID;
-    private double amount;
-    private String fineDate;
+    private BigDecimal amount; // Don't use double (potential rounding errors).
+    private LocalDateTime fineDate; 
     private String reason;
-    private String status;
+    private enum FineStatus {
+        UNPAID,
+        PAID, 
+        WAIVED
+    };
+    private FineStatus status;
 
-    public Fine(int userID, int loanID, double amount, String fineDate, String reason, String status) {
+    // Constructor for new fines (database will assign ID, fineDate is the same as constructor call time, status is UNPAID by default).
+    public Fine(int userID, int loanID, BigDecimal amount, String reason) {
         this.userID = userID;
+        this.loanID = loanID;
+        this.amount = amount;
+        this.fineDate = LocalDateTime.now();
+        this.reason = reason;
+        this.status = FineStatus.UNPAID;
+    }
+
+    // Constructor for existing fines (loaded from database).
+    public Fine(int fineID, int loanID, BigDecimal amount, LocalDateTime fineDate, String reason, FineStatus status) {
+        this.fineID = fineID;
         this.loanID = loanID;
         this.amount = amount;
         this.fineDate = fineDate;
@@ -17,17 +37,48 @@ public class Fine {
         this.status = status;
     }
 
+    // Getters:
+    public int getFineID() { return fineID; }
     public int getUserID() { return userID; }
     public int getLoanID() { return loanID; }
-    public double getAmount() { return amount; }
-    public String getFineDate() { return fineDate; }
+    public BigDecimal getAmount() { return amount; }
+    public LocalDateTime getFineDate() { return fineDate; }
     public String getReason() { return reason; }
-    public String getStatus() { return status; }
+    public FineStatus getStatus() { return status; }
 
-    public void setUserID(int userID) { this.userID = userID; }
-    public void setLoanID(int loanID) { this.loanID = loanID; }
-    public void setAmount(double amount) { this.amount = amount; }
-    public void setFineDate(String fineDate) { this.fineDate = fineDate; }
+    // Setters:
     public void setReason(String reason) { this.reason = reason; }
-    public void setStatus(String status) { this.status = status; }
+    private void setStatus(FineStatus status) { this.status = status; }
+
+    // Helper methods:
+    private void assertPayable() {
+        if (this.status == FineStatus.PAID) {
+            throw new FinePaymentNotAllowedException("Payment failed: your fine has already been paid.");
+        }
+        if (this.status == FineStatus.WAIVED) {
+            throw new FinePaymentNotAllowedException("Payment failed: your fine has already been waived.");
+        }
+    }
+
+    private void assertWaivable() {
+        if (this.status == FineStatus.PAID) {
+            throw new FineWaivementNotAllowedException("Waivement failed: the fine has already been paid.");
+        }
+        if (this.status == FineStatus.WAIVED) {
+            throw new FineWaivementNotAllowedException("Waivement failed: the fine has already been waived.");
+        }
+    }
+
+    // Public methods:
+    public boolean payFine() {
+        assertPayable();
+        this.setStatus(FineStatus.PAID);
+        return true;
+    }
+
+    public boolean waiveFine() {
+        assertWaivable();
+        this.setStatus(FineStatus.WAIVED);
+        return true;
+    }
 }

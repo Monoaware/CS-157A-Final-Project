@@ -1,26 +1,52 @@
 package edu.sjsu.library.models;
+import java.time.Year;
 
 public class Title {
     private int titleID;
     private String ISBN;
     private String title;
     private String author;
-    private int yearPublished;
-    private String genre;
+    private Year yearPublished;
+    private enum Genre { // Just a common list of genres.
+        FICTION,
+        NON_FICTION,
+        SCIENCE_FICTION,
+        FANTASY,
+        MYSTERY,
+        THRILLER,
+        ROMANCE,
+        HISTORY,
+        BIOGRAPHY,
+        CHILDRENS,
+        YOUNG_ADULT,
+        POETRY,
+        REFERENCE,
+        SELF_HELP,
+        SCIENCE,
+        TECHNOLOGY,
+        ART,
+        TRAVEL,
+        RELIGION,
+        PHILOSOPHY,
+        COMICS,
+        COOKING;
+    };
+    private Genre genre;
     private boolean isVisible;
 
-    public Title() {}
-    
-    public Title(int titleID, String ISBN, String title, String author, int yearPublished, String genre, boolean isVisible) {
+    // Constructor for new book titles (database auto-increments, titles are visible by default).
+    public Title(String ISBN, String title, String author, Year yearPublished, Genre genre) {
         this.ISBN = ISBN;
         this.title = title;
         this.author = author;
         this.yearPublished = yearPublished;
         this.genre = genre;
-        this.isVisible = isVisible;
+        this.isVisible = true;
     }
 
-    public Title(String ISBN, String title, String author, int yearPublished, String genre, boolean isVisible) {
+    // Constructor for existing book titles (loaded from database).
+    public Title(int titleID, String ISBN, String title, String author, Year yearPublished, String genre, boolean isVisible) {
+        this.titleID = titleID;
         this.ISBN = ISBN;
         this.title = title;
         this.author = author;
@@ -29,6 +55,7 @@ public class Title {
         this.isVisible = isVisible;
     }
     
+    // Getters:
     public int getTitleID() { return titleID; }
     public String getISBN() { return ISBN;}
     public String getTitle() { return title; }
@@ -37,11 +64,11 @@ public class Title {
     public String getGenre() { return genre; }
     public boolean isVisible() { return isVisible; }
 
-    public void setTitleID(int titleID) { this.titleID = titleID; }
+    // Setters:
     public void setISBN(String ISBN) { this.ISBN = ISBN; }
     public void setTitle(String title) { this.title = title; }
     public void setAuthor(String author) { this.author = author; }
-    public void setYearPublished(int yearPublished) { this.yearPublished = yearPublished; }
+    public void setYearPublished(Year yearPublished) { this.yearPublished = yearPublished; }
     public void setGenre(String genre) { this.genre = genre; }
-    public void setVisible(boolean visible) { isVisible = visible; }
+    public void setVisible(boolean visible) { this.isVisible = visible; }
 }
