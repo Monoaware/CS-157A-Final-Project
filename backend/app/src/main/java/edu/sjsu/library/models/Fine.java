@@ -1,6 +1,8 @@
 package edu.sjsu.library.models;
 import edu.sjsu.library.exceptions.FinePaymentNotAllowedException;
 import edu.sjsu.library.exceptions.FineWaivementNotAllowedException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 // Note: Fines must be paid in full or not at all to simplify transactions.
 public class Fine {

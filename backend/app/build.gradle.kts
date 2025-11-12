@@ -19,6 +19,7 @@ repositories {
 }
 
 dependencies {
+    implementation ("org.mindrot:jbcrypt:0.4")
 
     // Spring Boot starters
     implementation("org.springframework.boot:spring-boot-starter-web")

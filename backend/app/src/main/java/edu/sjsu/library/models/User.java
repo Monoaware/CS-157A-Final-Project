@@ -7,12 +7,12 @@ public class User {
     private String lname;
     private String email;
     private String passwordhash;
-    private enum UserRole {
+    public enum UserRole {
         MEMBER,
         STAFF
     };
     private UserRole role;
-    private enum UserStatus {
+    public enum UserStatus {
         ACTIVE,
         INACTIVE,
         RESTRICTED
@@ -45,7 +45,7 @@ public class User {
     public String getFname() { return fname; }
     public String getLname() { return lname; }
     public String getEmail() { return email; }
-    public String getPasswordHash() { return passwordhash; }
+    public String getPasswordHash() { return this.passwordhash; }
     public UserRole getRole() { return role; }
     public UserStatus getStatus() { return status; }
 
@@ -53,7 +53,7 @@ public class User {
     public void setFname(String fname) { this.fname = fname; }
     public void setLname(String lname) { this.lname = lname; }
     public void setEmail(String email) { this.email = email; }
-    private void setPasswordHash(String passwordhash) { this.passwordhash = passwordhash; }
+    public void setPasswordHash(String passwordhash) { this.passwordhash = passwordhash; }
 
     // Public methods:
     public boolean isActive() { return this.status == UserStatus.ACTIVE; }
