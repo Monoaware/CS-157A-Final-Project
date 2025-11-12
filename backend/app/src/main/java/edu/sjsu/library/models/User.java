@@ -8,7 +8,17 @@ public class User {
     public String passwordhash;
     public String role;
 
+    // When loading pre-existing user from DB
     public User(int id, String fname, String lname, String email, String passwordhash, String role) {
+        this.fname = fname;
+        this.lname = lname;
+        this.email = email;
+        this.passwordhash = passwordhash;
+        this.role = role;
+    }
+
+    // When creating new user to add to DB
+    public User(String fname, String lname, String email, String passwordhash, String role) {
         this.fname = fname;
         this.lname = lname;
         this.email = email;

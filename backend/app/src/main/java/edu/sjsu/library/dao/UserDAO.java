@@ -29,14 +29,13 @@ public class UserDAO {
 
     // Create a new user
     public void addUser(User user) throws SQLException {
-        String query = "INSERT INTO Users (id, fname, lname, email, passwordhash, role) VALUES (?, ?, ?, ?, ?, ?)";
+        String query = "INSERT INTO Users (fname, lname, email, passwordhash, role) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setInt(1, user.getId());
-            stmt.setString(2, user.getFname());
-            stmt.setString(3, user.getLname());
-            stmt.setString(4, user.getEmail());
-            stmt.setString(5, user.getPasswordhash());
-            stmt.setString(6, user.getRole());
+            stmt.setString(1, user.getFname());
+            stmt.setString(2, user.getLname());
+            stmt.setString(3, user.getEmail());
+            stmt.setString(4, user.getPasswordhash());
+            stmt.setString(5, user.getRole());
             stmt.executeUpdate();
         }
     }
