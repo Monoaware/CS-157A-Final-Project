@@ -1,0 +1,9 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<h1>Titles</h1>
+<ul>
+    <li th:each="t : ${titles}" th:text="${t}">A title</li>
+</ul>
+</body>
+</html>

@@ -1,5 +1,5 @@
 package edu.sjsu.library.services;
-import edu.sjsu.library.services.dao.UserDao;
+import edu.sjsu.library.dao.UserDAO;
 import edu.sjsu.library.models.User;
 import edu.sjsu.library.exceptions.UserAlreadyExistsException;
 import edu.sjsu.library.exceptions.AuthenticationFailedException;
@@ -7,11 +7,11 @@ import edu.sjsu.library.exceptions.UserStatusChangeNotAllowedException;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class UserService {
-    private final UserDao userDao;
+    private final UserDAO userDao;
     private final int bcryptWorkFactor = 12;
 
     // Constructor.
-    public UserService(UserDao userDao) {
+    public UserService(UserDAO userDao) {
         this.userDao = userDao;
     }
 
@@ -41,7 +41,7 @@ public class UserService {
 
     // 3. Password change (NOT RESET). 
     public void changePassword(int userID, String oldPassword, String newPassword) {
-        User user = userDao.findById(userId);
+        User user = userDao.findById(userID);
         if (user == null) {
             throw new IllegalArgumentException("Password change failed: the user could not be located.");
         }

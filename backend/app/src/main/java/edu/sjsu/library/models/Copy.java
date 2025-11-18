@@ -54,7 +54,7 @@ public class Copy {
     public boolean isReserved() { return this.status == CopyStatus.RESERVED; }
     
     public void markAvailable() { this.status = CopyStatus.AVAILABLE; }
-    public void markCheckedOut() { this.status = CHECKED_OUT; }
+    public void markCheckedOut() { this.status = CopyStatus.CHECKED_OUT; }
     public void markLost() { this.status = CopyStatus.LOST; }
     public void markDamaged() { this.status = CopyStatus.DAMAGED; }
     public void markMaintenance() { this.status = CopyStatus.MAINTENANCE; }

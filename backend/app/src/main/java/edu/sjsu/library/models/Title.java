@@ -7,7 +7,7 @@ public class Title {
     private String title;
     private String author;
     private Year yearPublished;
-    private enum Genre { // Just a common list of genres.
+    public enum Genre { // Just a common list of genres.
         FICTION,
         NON_FICTION,
         SCIENCE_FICTION,
@@ -45,7 +45,7 @@ public class Title {
     }
 
     // Constructor for existing book titles (loaded from database).
-    public Title(int titleID, String ISBN, String title, String author, Year yearPublished, String genre, boolean isVisible) {
+    public Title(int titleID, String ISBN, String title, String author, Year yearPublished, Genre genre, boolean isVisible) {
         this.titleID = titleID;
         this.ISBN = ISBN;
         this.title = title;
@@ -60,8 +60,8 @@ public class Title {
     public String getISBN() { return ISBN;}
     public String getTitle() { return title; }
     public String getAuthor() { return author; }
-    public int getYearPublished() { return yearPublished; }
-    public String getGenre() { return genre; }
+    public Year getYearPublished() { return yearPublished; }
+    public Genre getGenre() { return genre; }
     public boolean isVisible() { return isVisible; }
 
     // Setters:
@@ -69,6 +69,6 @@ public class Title {
     public void setTitle(String title) { this.title = title; }
     public void setAuthor(String author) { this.author = author; }
     public void setYearPublished(Year yearPublished) { this.yearPublished = yearPublished; }
-    public void setGenre(String genre) { this.genre = genre; }
+    public void setGenre(Genre genre) { this.genre = genre; }
     public void setVisible(boolean visible) { this.isVisible = visible; }
 }

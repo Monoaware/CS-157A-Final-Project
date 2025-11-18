@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     implementation ("org.mindrot:jbcrypt:0.4")
-
+    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     // Spring Boot starters
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")

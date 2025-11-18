@@ -7,10 +7,12 @@ public class User {
     private String lname;
     private String email;
     private String passwordhash;
+    
     public enum UserRole {
         MEMBER,
         STAFF
     };
+
     private UserRole role;
     public enum UserStatus {
         ACTIVE,

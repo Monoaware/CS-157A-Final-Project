@@ -1,92 +1,133 @@
 package edu.sjsu.library.dao;
 
 import edu.sjsu.library.models.Title;
-import java.sql.*;
-import java.util.ArrayList;
+import edu.sjsu.library.models.Title.Genre;
+import java.time.Year;
+
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+import org.springframework.jdbc.core.RowMapper;
 import java.util.List;
 
+
+@Repository
 public class TitleDAO {
-    private final Connection connection;
 
-    public TitleDAO(Connection connection) {
-        this.connection = connection;
+    private final JdbcTemplate jdbc;
+
+    public TitleDAO(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
     }
 
-    public void createTable() throws SQLException {
-        String query = "CREATE TABLE IF NOT EXISTS titles (" +
-                     "id SERIAL PRIMARY KEY, " +
-                     "ISBN VARCHAR(255) NOT NULL, " +
-                     "title VARCHAR(255) NOT NULL, " +
-                     "author VARCHAR(255) NOT NULL, " +
-                     "yearPublished INT NOT NULL," +
-                     "genre VARCHAR(100), " +
-                     "isVisible BOOLEAN DEFAULT TRUE" +
-                     ")";
-        try (Statement stmt = connection.createStatement()) {
-            stmt.execute(query);
-        }
+    public void createTable() {
+        String sql = """
+            CREATE TABLE IF NOT EXISTS titles (
+                id SERIAL PRIMARY KEY,
+                ISBN VARCHAR(255) NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                author VARCHAR(255) NOT NULL,
+                yearPublished INT NOT NULL,
+                genre VARCHAR(100),
+                isVisible BOOLEAN DEFAULT TRUE
+            )
+            """;
+        jdbc.execute(sql);
     }
 
-    public void addTitle(Title title) throws SQLException {
-        String query = "INSERT INTO titles (ISBN, title, author, yearPublished, genre, isVisible) VALUES (?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setString(1, title.getISBN());
-            stmt.setString(2, title.getTitle());
-            stmt.setString(3, title.getAuthor());
-            stmt.setInt(4, title.getYearPublished());
-            stmt.setString(5, title.getGenre());
-            stmt.setBoolean(6, title.isVisible());
-            stmt.executeUpdate();
-        }
+    public List<Title> findAll() {
+        return jdbc.query(
+            "SELECT id, isbn, title, author, yearpublished, genre, isvisible FROM titles ORDER BY id",
+            (rs, n) -> new Title(
+                rs.getInt("id"),
+                rs.getString("isbn"),
+                rs.getString("title"),
+                rs.getString("author"),
+                Year.of(rs.getInt("yearpublished")),
+                Genre.valueOf(rs.getString("genre").trim().toUpperCase()),
+                rs.getBoolean("isvisible")
+            )
+        );
     }
 
-    public Title getTitleById(int id) throws SQLException {
-        String query = "SELECT * FROM titles WHERE id = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-
-            if (rs.next()) {
-                return new Title(
+    public Title findById(int id) {
+        try {
+            return jdbc.queryForObject(
+                "SELECT id, isbn, title, author, yearpublished, genre, isvisible FROM titles WHERE id = ?",
+                (rs, n) -> new Title(
                     rs.getInt("id"),
-                    rs.getString("ISBN"),
+                    rs.getString("isbn"),
                     rs.getString("title"),
                     rs.getString("author"),
-                    rs.getInt("yearPublished"),
-                    rs.getString("genre"),
-                    rs.getBoolean("isVisible")
-                );
-            }
+                    Year.of(rs.getInt("yearpublished")),
+                    Genre.valueOf(rs.getString("genre").trim().toUpperCase()),
+                    rs.getBoolean("isvisible")
+                ),
+                id
+            );
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         }
-        return null;
     }
 
-    public List<Title> getAllTitles() throws SQLException {
-        List<Title> titles = new ArrayList<>();
-        String query = "SELECT * FROM titles";
-        try (Statement stmt = connection.createStatement()) {
-            ResultSet rs = stmt.executeQuery(query);
-            while (rs.next()) {
-                Title title = new Title(
+    public Title findByIsbn(String isbn) {
+        try {
+            return jdbc.queryForObject(
+                "SELECT id, isbn, title, author, yearpublished, genre, isvisible FROM titles WHERE isbn = ?",
+                (rs, n) -> new Title(
                     rs.getInt("id"),
-                    rs.getString("ISBN"),
+                    rs.getString("isbn"),
                     rs.getString("title"),
                     rs.getString("author"),
-                    rs.getInt("yearPublished"),
-                    rs.getString("genre"),
-                    rs.getBoolean("isVisible")
-                );
-                titles.add(title);
-            }
-        }
-        return titles;
-    }   
-
-    public void deleteTitle(int id) throws SQLException {
-        String query = "DELETE FROM titles WHERE id = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setInt(1, id);
-            stmt.executeUpdate();   
+                    Year.of(rs.getInt("yearpublished")),
+                    Genre.valueOf(rs.getString("genre").trim().toUpperCase()),
+                    rs.getBoolean("isvisible")
+                ),
+                isbn
+            );
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         }
     }
-}   
+
+    /** Insert and return generated id */
+    public int insert(Title t) {
+        String sql = """
+            INSERT INTO titles (isbn, title, author, yearpublished, genre, isvisible)
+            VALUES (?, ?, ?, ?, ?, ?)
+            RETURNING id
+            """;
+        Integer newId = jdbc.queryForObject(
+            sql, Integer.class,
+            t.getISBN(),
+            t.getTitle(),
+            t.getAuthor(),
+            t.getYearPublished(),
+            t.getGenre(),
+            t.isVisible()
+        );
+        return newId;
+    }
+
+    public int update(Title t) {
+        String sql = """
+            UPDATE titles
+               SET isbn = ?, title = ?, author = ?, yearpublished = ?, genre = ?, isvisible = ?
+             WHERE id = ?
+            """;
+        return jdbc.update(
+            sql,
+            t.getISBN(),
+            t.getTitle(),
+            t.getAuthor(),
+            t.getYearPublished(),
+            t.getGenre(),
+            t.isVisible(),
+            t.getTitleID()              
+        );
+    }
+
+    public int delete(int id) {
+        return jdbc.update("DELETE FROM titles WHERE id = ?", id);
+    }
+}

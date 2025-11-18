@@ -1,0 +1,9 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<h1>Users</h1>
+<ul>
+    <li th:each="u : ${users}" th:text="${u}">A user</li>
+</ul>
+</body>
+</html>
