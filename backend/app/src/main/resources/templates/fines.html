@@ -1,0 +1,9 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<h1>Fines</h1>
+<ul>
+    <li th:each="f : ${fines}" th:text="${f}">A fine</li>
+</ul>
+</body>
+</html>

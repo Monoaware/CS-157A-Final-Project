@@ -4,21 +4,19 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import edu.sjsu.library.dao.UserDAO;
-
+import edu.sjsu.library.dao.FineDAO;
 
 @Controller
-public class UserController {
+public class FineController {
+    private final FineDAO fdao;
 
-    private final UserDAO userdao;
-
-    public UserController(UserDAO userdao) {
-        this.userdao = userdao;
+    public FineController(FineDAO fdao) {
+        this.fdao = fdao;
     }
 
-    @GetMapping("/users")
+    @GetMapping("/fines")
     public String listUsers(Model model){
-        model.addAttribute("users", userdao.findAll());
+        model.addAttribute("users", fdao.findAll());
         return "users";
     }
 }

@@ -4,21 +4,20 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import edu.sjsu.library.dao.HoldDAO;
 import edu.sjsu.library.dao.UserDAO;
 
-
 @Controller
-public class UserController {
+public class HoldController {
+    private final HoldDAO hdao;
 
-    private final UserDAO userdao;
-
-    public UserController(UserDAO userdao) {
-        this.userdao = userdao;
+    public HoldController(HoldDAO hdao) {
+        this.hdao = hdao;
     }
 
-    @GetMapping("/users")
+    @GetMapping("/holds")
     public String listUsers(Model model){
-        model.addAttribute("users", userdao.findAll());
+        model.addAttribute("users", hdao.findAll());
         return "users";
     }
 }

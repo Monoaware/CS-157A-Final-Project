@@ -1,0 +1,9 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<h1>Copies</h1>
+<ul>
+    <li th:each="c : ${copies}" th:text="${c}">A copy</li>
+</ul>
+</body>
+</html>
