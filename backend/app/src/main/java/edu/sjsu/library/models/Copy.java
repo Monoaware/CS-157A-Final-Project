@@ -4,7 +4,7 @@ public class Copy {
     private int copyID; // Primary key (auto-increment).
     private int titleID;
     private String barcode;
-    private enum CopyStatus {
+    public enum CopyStatus {
         AVAILABLE, 
         CHECKED_OUT,
         LOST,

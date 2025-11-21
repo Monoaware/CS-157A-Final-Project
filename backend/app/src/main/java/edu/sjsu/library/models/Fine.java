@@ -12,7 +12,7 @@ public class Fine {
     private BigDecimal amount; // Don't use double (potential rounding errors).
     private LocalDateTime fineDate; 
     private String reason;
-    private enum FineStatus {
+    public enum FineStatus {
         UNPAID,
         PAID, 
         WAIVED

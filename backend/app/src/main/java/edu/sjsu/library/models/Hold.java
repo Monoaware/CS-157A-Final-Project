@@ -1,13 +1,14 @@
 package edu.sjsu.library.models;
-import edu.sjsu.library.exceptions.HoldChangeNotAllowedException;
 import java.time.LocalDateTime;
+
+import edu.sjsu.library.exceptions.HoldChangeNotAllowedException;
 
 public class Hold {
     private int holdID;
     private int userID;
     private int titleID;
     private int copyID;
-    private enum HoldStatus {
+    public enum HoldStatus {
         QUEUED,
         READY,
         PICKED_UP,
@@ -51,6 +52,7 @@ public class Hold {
     public int getUserID() { return userID;}
     public int getTitleID() { return titleID; }
     public int getCopyID() { return copyID; }
+    public int getHoldID() { return holdID; }
     public HoldStatus getStatus() { return status; }
     public LocalDateTime getPlacedAt() { return placedAt; }
     public LocalDateTime getReadyAt() { return readyAt; }

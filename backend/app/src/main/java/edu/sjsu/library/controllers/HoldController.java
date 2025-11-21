@@ -5,7 +5,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import edu.sjsu.library.dao.HoldDAO;
-import edu.sjsu.library.dao.UserDAO;
 
 @Controller
 public class HoldController {

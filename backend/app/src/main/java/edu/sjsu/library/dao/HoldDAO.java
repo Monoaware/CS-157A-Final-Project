@@ -1,5 +1,120 @@
 package edu.sjsu.library.dao;
 
+import edu.sjsu.library.models.Hold;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+import java.sql.Timestamp;
+import java.util.List;
+
+@Repository
 public class HoldDAO {
-    
+
+    private final JdbcTemplate jdbc;
+
+    public HoldDAO(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
+    }
+
+    public void createTable() {
+        String sql = """
+            CREATE TABLE IF NOT EXISTS holds (
+                id SERIAL PRIMARY KEY,
+                userid INTEGER NOT NULL,
+                titleid INTEGER NOT NULL,
+                copyid INTEGER NOT NULL,
+                status VARCHAR(20) NOT NULL,
+                placedat TIMESTAMP NOT NULL,
+                readyat TIMESTAMP NULL,
+                pickupexpire TIMESTAMP NULL,
+                position INTEGER NOT NULL
+            )
+            """;
+        jdbc.execute(sql);
+    }
+
+    private Hold mapRow(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
+        return new Hold(
+            rs.getInt("id"),
+            rs.getInt("userid"),
+            rs.getInt("titleid"),
+            rs.getInt("copyid"),
+            Hold.HoldStatus.valueOf(rs.getString("status").trim().toUpperCase()),
+            rs.getTimestamp("placedat").toLocalDateTime(),
+            rs.getTimestamp("readyat") != null ? rs.getTimestamp("readyat").toLocalDateTime() : null,
+            rs.getTimestamp("pickupexpire") != null ? rs.getTimestamp("pickupexpire").toLocalDateTime() : null,
+            rs.getInt("position")
+        );
+    }
+
+    public List<Hold> findAll() {
+        return jdbc.query(
+            "SELECT * FROM holds ORDER BY id",
+            this::mapRow
+        );
+    }
+
+    public Hold findById(int id) {
+        try {
+            return jdbc.queryForObject(
+                "SELECT * FROM holds WHERE id = ?",
+                this::mapRow,
+                id
+            );
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
+
+    public List<Hold> findByUser(int userId) {
+        return jdbc.query(
+            "SELECT * FROM holds WHERE userid = ? ORDER BY position",
+            this::mapRow,
+            userId
+        );
+    }
+
+    public int insert(Hold h) {
+        Integer newId = jdbc.queryForObject(
+            """
+            INSERT INTO holds (userid, titleid, copyid, status, placedat, readyat, pickupexpire, position)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            RETURNING id
+            """,
+            Integer.class,
+            h.getUserID(),
+            h.getTitleID(),
+            h.getCopyID(),
+            h.getStatus().name(),
+            Timestamp.valueOf(h.getPlacedAt()),
+            h.getReadyAt() != null ? Timestamp.valueOf(h.getReadyAt()) : null,
+            h.getPickupExpire() != null ? Timestamp.valueOf(h.getPickupExpire()) : null,
+            h.getPosition()
+        );
+        return newId;
+    }
+
+    public int update(Hold h) {
+        return jdbc.update(
+            """
+            UPDATE holds
+            SET userid = ?, titleid = ?, copyid = ?, status = ?,
+                placedat = ?, readyat = ?, pickupexpire = ?, position = ?
+            WHERE id = ?
+            """,
+            h.getUserID(),
+            h.getTitleID(),
+            h.getCopyID(),
+            h.getStatus().name(),
+            Timestamp.valueOf(h.getPlacedAt()),
+            h.getReadyAt() != null ? Timestamp.valueOf(h.getReadyAt()) : null,
+            h.getPickupExpire() != null ? Timestamp.valueOf(h.getPickupExpire()) : null,
+            h.getPosition(),
+            h.getHoldID()
+        );
+    }
+
+    public int delete(int id) {
+        return jdbc.update("DELETE FROM holds WHERE id = ?", id);
+    }
 }
