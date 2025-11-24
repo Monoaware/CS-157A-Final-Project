@@ -44,6 +44,12 @@ public class BookRecord {
     public LocalDateTime getDueDate() { return dueDate; }
     public LocalDateTime getReturnDate() { return returnDate; }
     public int getRenewCount() { return renewCount; }
+    public static int getMaxRenewals() { 
+        return MAX_RENEWALS; 
+    }
+    public static int getLoanPeriodDays() { 
+        return LOAN_PERIOD_DAYS; 
+    }
 
     // Helper methods:
     private void assertRenewable() {
@@ -53,6 +59,18 @@ public class BookRecord {
         if (this.getRenewCount() >= MAX_RENEWALS) {
             throw new RenewalNotAllowedException("Cannot renew: max renewals reached.");
         }
+    }
+
+    // Staff can override normal renewal limits.
+    public boolean staffRenew() {
+        // Only check if already returned - skip max renewal check
+        if (this.getReturnDate() != null) {
+            throw new RenewalNotAllowedException("Cannot renew: book has already been returned on " + this.getReturnDate());
+        }
+        
+        this.renewCount++;
+        this.dueDate = this.dueDate.plusDays(LOAN_PERIOD_DAYS);
+        return true;
     }
 
     // Public methods:

@@ -74,12 +74,56 @@ public class BookRecordDAO {
         );
     }
 
+    // Find active loans by user (where returnDate is null)
+    public List<BookRecord> findActiveByUser(int userId) {
+        return jdbc.query(
+            "SELECT * FROM book_records WHERE userid = ? AND returndate IS NULL ORDER BY checkoutdate DESC",
+            this::mapRow,
+            userId
+        );
+    }
+
     // Find records for a particular copy
     public List<BookRecord> findByCopy(int copyId) {
         return jdbc.query(
             "SELECT * FROM book_records WHERE copyid = ? ORDER BY checkoutdate DESC",
             this::mapRow,
             copyId
+        );
+    }
+
+    // Find current active loan for a specific copy (returns null if not checked out)
+    public BookRecord findActiveByCopy(int copyId) {
+        List<BookRecord> activeLoans = jdbc.query(
+            "SELECT * FROM book_records WHERE copyid = ? AND returndate IS NULL",
+            this::mapRow,
+            copyId
+        );
+        
+        // Should be at most one active loan per copy
+        return activeLoans.isEmpty() ? null : activeLoans.get(0);
+    }
+
+    // Find loans by title (join with copies table)
+    public List<BookRecord> findByTitle(int titleId) {
+        return jdbc.query(
+            """
+            SELECT br.* FROM book_records br 
+            JOIN copies c ON br.copyid = c.copyid 
+            WHERE c.titleid = ? 
+            ORDER BY br.checkoutdate DESC
+            """,
+            this::mapRow,
+            titleId
+        );
+    }
+
+    // Find overdue loans (active loans past due date)
+    public List<BookRecord> findOverdue(java.time.LocalDateTime currentDate) {
+        return jdbc.query(
+            "SELECT * FROM book_records WHERE returndate IS NULL AND duedate < ? ORDER BY duedate",
+            this::mapRow,
+            java.sql.Timestamp.valueOf(currentDate)
         );
     }
 

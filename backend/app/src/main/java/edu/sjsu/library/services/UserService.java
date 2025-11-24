@@ -1,3 +1,6 @@
+/*
+    UserService.java is specifically meant for user-only operations and does not handle any of the book-related business logic.
+*/
 package edu.sjsu.library.services;
 import edu.sjsu.library.dao.UserDAO;
 import edu.sjsu.library.models.User;
@@ -6,6 +9,7 @@ import edu.sjsu.library.exceptions.AuthenticationFailedException;
 import edu.sjsu.library.exceptions.UserStatusChangeNotAllowedException;
 import org.mindrot.jbcrypt.BCrypt;
 
+@Service // Tell Springboot this is a service component so it can manage it for us.
 public class UserService {
     private final UserDAO userDao;
     private final int bcryptWorkFactor = 12;
@@ -16,6 +20,7 @@ public class UserService {
     }
 
     // 1. Registration.
+    @Transactional
     public User register(String fname, String lname, String email, String rawPassword, User.UserRole role) {
         // Emails must be unique!
         if (userDao.findByEmail(email) != null) {
@@ -40,6 +45,7 @@ public class UserService {
     }
 
     // 3. Password change (NOT RESET). 
+    @Transactional
     public void changePassword(int userID, String oldPassword, String newPassword) {
         User user = userDao.findById(userID);
         if (user == null) {
@@ -59,6 +65,7 @@ public class UserService {
     }
 
     // 5. Status change.
+    @Transactional
     public void setStatus(int userID, User.UserStatus newStatus) {
         User user = userDao.findById(userID);
         if (user == null) throw new IllegalArgumentException("Status change failed: user not found.");

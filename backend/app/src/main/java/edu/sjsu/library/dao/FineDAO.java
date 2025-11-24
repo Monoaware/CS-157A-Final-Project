@@ -67,6 +67,15 @@ public class FineDAO {
         );
     }
 
+    public List<Fine> findByUserAndStatus(int userId, FineStatus status) {
+        return jdbc.query(
+            "SELECT * FROM fines WHERE userid = ? AND status = ? ORDER BY finedate DESC",
+            this::mapRow,
+            userId,
+            status.name()
+        );
+    }
+
     public int insert(Fine f) {
         Integer newId = jdbc.queryForObject(
             """

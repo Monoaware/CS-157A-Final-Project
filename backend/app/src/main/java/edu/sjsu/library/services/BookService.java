@@ -1,0 +1,3 @@
+/*
+    BookService.java handles the actual book catalogue.
+*/
