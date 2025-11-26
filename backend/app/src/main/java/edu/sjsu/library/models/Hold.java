@@ -59,6 +59,10 @@ public class Hold {
     public LocalDateTime getPickupExpire() { return pickupExpire; }
     public int getPosition() { return position; }
 
+    // Setters: 
+    public void setPosition(int position) { this.position = position; }
+    public void setCopyID (int copyID) { this.copyID = copyID; }
+
     // Helper methods:
     private void assertCanMarkReady() {
         if (this.status != HoldStatus.QUEUED) {
@@ -109,13 +113,5 @@ public class Hold {
     public void markExpired() {
         assertCanMarkExpired();
         this.status = HoldStatus.EXPIRED;
-    }
-
-    public boolean decrementPosition() {
-        if (this.position <= 1) {
-            throw new IllegalStateException("Cannot decrement position: position cannot be less than 1.");
-        }
-        this.position--;
-        return true;
     }
 }

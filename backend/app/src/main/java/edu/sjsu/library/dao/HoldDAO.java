@@ -117,4 +117,70 @@ public class HoldDAO {
     public int delete(int id) {
         return jdbc.update("DELETE FROM holds WHERE id = ?", id);
     }
+
+    // Get the next position in queue for a title.
+    public int getNextPosition(int titleID) {
+        try {
+            Integer maxPosition = jdbc.queryForObject(
+                "SELECT MAX(position) FROM holds WHERE titleid = ? AND status IN ('QUEUED', 'READY')",
+                Integer.class,
+                titleID
+            );
+            return maxPosition != null ? maxPosition + 1 : 1;
+        } catch (Exception e) {
+            return 1; // First hold for this title
+        }
+    }
+
+    // Find active hold by user and title.
+    public Hold findActiveHoldByUserAndTitle(int userID, int titleID) {
+        try {
+            return jdbc.queryForObject(
+                "SELECT * FROM holds WHERE userid = ? AND titleid = ? AND status IN ('QUEUED', 'READY')",
+                this::mapRow,
+                userID, titleID
+            );
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
+
+    // Find next hold in queue for a title.
+    public Hold findNextHoldForTitle(int titleID) {
+        try {
+            return jdbc.queryForObject(
+                "SELECT * FROM holds WHERE titleid = ? AND status = 'QUEUED' ORDER BY position LIMIT 1",
+                this::mapRow,
+                titleID
+            );
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
+
+    // Find holds by title.
+    public List<Hold> findByTitle(int titleID) {
+        return jdbc.query(
+            "SELECT * FROM holds WHERE titleid = ? ORDER BY position",
+            this::mapRow,
+            titleID
+        );
+    }
+
+    // Find holds by title ordered by position (only looks at active holds).
+    public List<Hold> findByTitleOrderedByPosition(int titleID) {
+        return jdbc.query(
+            "SELECT * FROM holds WHERE titleid = ? AND status IN ('QUEUED', 'READY') ORDER BY position",
+            this::mapRow,
+            titleID
+        );
+    }
+
+    // Find expired holds.
+    public List<Hold> findExpiredHolds() {
+        return jdbc.query(
+            "SELECT * FROM holds WHERE status = 'READY' AND pickupexpire < NOW()",
+            this::mapRow
+        );
+    }
 }

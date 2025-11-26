@@ -89,6 +89,56 @@ public class TitleDAO {
         }
     }
 
+    public List<Title> findByYearRange(Year startYear, Year endYear) {
+        return jdbc.query(
+            "SELECT id, isbn, title, author, yearpublished, genre, isvisible FROM titles WHERE yearpublished BETWEEN ? AND ? ORDER BY yearpublished DESC, title",
+            (rs, n) -> new Title(
+                rs.getInt("id"),
+                rs.getString("isbn"),
+                rs.getString("title"),
+                rs.getString("author"),
+                Year.of(rs.getInt("yearpublished")),
+                Genre.valueOf(rs.getString("genre").trim().toUpperCase()),
+                rs.getBoolean("isvisible")
+            ),
+            startYear.getValue(), endYear.getValue()
+        );
+    }
+
+    public List<Title> findByAuthor(String author) {
+        return jdbc.query(
+            "SELECT id, isbn, title, author, yearpublished, genre, isvisible FROM titles WHERE LOWER(author) LIKE LOWER(?) ORDER BY title",
+            (rs, n) -> new Title(
+                rs.getInt("id"),
+                rs.getString("isbn"),
+                rs.getString("title"),
+                rs.getString("author"),
+                Year.of(rs.getInt("yearpublished")),
+                Genre.valueOf(rs.getString("genre").trim().toUpperCase()),
+                rs.getBoolean("isvisible")
+            ),
+            "%" + author + "%"
+        );
+    }
+
+    public List<Title> findByGenre(Genre genre) {
+        return jdbc.query(
+            "SELECT id, isbn, title, author, yearpublished, genre, isvisible FROM titles WHERE genre = ? ORDER BY title",
+            (rs, n) -> new Title(
+                rs.getInt("id"),
+                rs.getString("isbn"),
+                rs.getString("title"),
+                rs.getString("author"),
+                Year.of(rs.getInt("yearpublished")),
+                Genre.valueOf(rs.getString("genre").trim().toUpperCase()),
+                rs.getBoolean("isvisible")
+            ),
+            genre.toString()
+        );
+    }
+
+
+
     /** Insert and return generated id */
     public int insert(Title t) {
         String sql = """
@@ -123,6 +173,21 @@ public class TitleDAO {
             t.getGenre(),
             t.isVisible(),
             t.getTitleID()              
+        );
+    }
+
+    public List<Title> findAllVisible() {
+        return jdbc.query(
+            "SELECT id, isbn, title, author, yearpublished, genre, isvisible FROM titles WHERE isvisible = TRUE ORDER BY id",
+            (rs, n) -> new Title(
+                rs.getInt("id"),
+                rs.getString("isbn"),
+                rs.getString("title"),
+                rs.getString("author"),
+                Year.of(rs.getInt("yearpublished")),
+                Genre.valueOf(rs.getString("genre").trim().toUpperCase()),
+                rs.getBoolean("isvisible")
+            )
         );
     }
 
