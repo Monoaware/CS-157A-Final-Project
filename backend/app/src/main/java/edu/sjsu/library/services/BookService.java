@@ -5,10 +5,12 @@ package edu.sjsu.library.services;
 
 import edu.sjsu.library.utils.AuthorizationUtils;
 import edu.sjsu.library.models.AvailabilitySummary;
+import edu.sjsu.library.models.Copy;
 import java.util.stream.Collectors;
 import java.util.List;
 import java.time.Year;
 import edu.sjsu.library.dao.TitleDAO;
+import edu.sjsu.library.dao.CopyDAO;
 import edu.sjsu.library.models.Title;
 import edu.sjsu.library.models.User;
 
@@ -77,8 +79,9 @@ public class BookService {
             throw new IllegalArgumentException("Title not found with ID: " + titleID);
         }
 
-        // Return the deletion statement.
-        return titleDAO.delete(titleID);
+        // Return the deletion result.
+        int affectedRows = titleDAO.delete(titleID);
+        return affectedRows > 0;
     }
 
     // 3. Edit title details (STAFF ONLY). 

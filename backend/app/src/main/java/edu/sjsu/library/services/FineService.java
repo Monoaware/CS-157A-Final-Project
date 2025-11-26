@@ -8,8 +8,6 @@ import edu.sjsu.library.dao.FineDAO;
 import edu.sjsu.library.dao.UserDAO;
 import edu.sjsu.library.models.Fine;
 import edu.sjsu.library.models.User;
-import edu.sjsu.library.exceptions.FinePaymentNotAllowedException;
-import edu.sjsu.library.exceptions.FineWaivementNotAllowedException;
 import edu.sjsu.library.exceptions.AuthorizationFailedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

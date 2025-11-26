@@ -9,6 +9,9 @@ import edu.sjsu.library.exceptions.AuthenticationFailedException;
 import edu.sjsu.library.exceptions.UserStatusChangeNotAllowedException;
 import org.mindrot.jbcrypt.BCrypt;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 @Service // Tell Springboot this is a service component so it can manage it for us.
 public class UserService {
     private final UserDAO userDao;

@@ -53,15 +53,14 @@ public class AuthorizationUtils {
      * @throws AuthorizationFailedException if user is not staff
      */
     public void validateStaffAccess(int requestorID) {
-        User requestor = userDAO.findById(requestorID) {
+        User requestor = userDAO.findById(requestorID);
             if (requestor == null) {
                 throw new AuthenticationFailedException("User not found.");
             }
             if (!requestor.isStaff()) {
-                throw new AuthorizationFailedExceptions("Staff access is required for this operation.");
+                throw new AuthorizationFailedException("Staff access is required for this operation.");
             }
         }
-    }
 
     /**
      * Validates that the user can access another user's data.

@@ -11,7 +11,6 @@ import edu.sjsu.library.models.Title;
 import edu.sjsu.library.models.Copy;
 import edu.sjsu.library.models.User;
 import edu.sjsu.library.utils.AuthorizationUtils;
-import edu.sjsu.library.exceptions.AuthenticationFailedException;
 import edu.sjsu.library.exceptions.AuthorizationFailedException;
 
 import org.springframework.stereotype.Service;
@@ -19,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -78,14 +77,18 @@ public class HoldService {
         }
         
         // Check if there are available copies (if yes, they should check out instead).
-        List<Copy> availableCopies = copyDAO.findAvailableByTitle(titleID);
+        List<Copy> allCopies = copyDAO.findByTitle(titleID);
+        List<Copy> availableCopies = allCopies.stream()
+            .filter(copy -> copy.getStatus() == Copy.CopyStatus.AVAILABLE)
+            .collect(Collectors.toList());
+
         if (!availableCopies.isEmpty()) {
             throw new IllegalArgumentException("Copies are currently available - please check out directly instead of placing a hold.");
         }
         
         // Create the hold with next position in queue.
         int position = holdDAO.getNextPosition(titleID);
-        Hold newHold = new Hold(requestorID, titleID, null, position);
+        Hold newHold = new Hold(requestorID, titleID, -1, position); // -1 b/c copyID not assigned yet.
         
         // Insert and return with generated ID.
         int holdID = holdDAO.insert(newHold);
@@ -194,7 +197,7 @@ public class HoldService {
         // Iterate over list of expired holds and change the COPY status to available.
         for (Hold expiredHold : expiredHolds) {
             // Mark copy as available again.
-            if (expiredHold.getCopyID() != null) {
+            if (expiredHold.getCopyID() != -1 && expiredHold.getCopyID() != 0) {
                 Copy copy = copyDAO.findById(expiredHold.getCopyID());
                 if (copy != null && copy.getStatus() == Copy.CopyStatus.RESERVED) {
                     copy.markAvailable();
@@ -208,7 +211,11 @@ public class HoldService {
             
             // Try to process next hold in queue.
             try {
-                List<Copy> availableCopies = copyDAO.findAvailableByTitle(expiredHold.getTitleID());
+                List<Copy> allCopies = copyDAO.findByTitle(expiredHold.getTitleID());
+                List<Copy> availableCopies = allCopies.stream()
+                .filter(copy -> copy.getStatus() == Copy.CopyStatus.AVAILABLE)
+                .collect(Collectors.toList());
+
                 if (!availableCopies.isEmpty()) {
                     processNextHold(expiredHold.getTitleID(), availableCopies.get(0).getCopyID(), requestorID);
                 }
@@ -280,7 +287,11 @@ public class HoldService {
         }
         
         // Check if copies are available (shouldn't place hold if available).
-        List<Copy> availableCopies = copyDAO.findAvailableByTitle(titleID);
+        List<Copy> allCopies = copyDAO.findByTitle(titleID);
+        List<Copy> availableCopies = allCopies.stream()
+            .filter(copy -> copy.getStatus() == Copy.CopyStatus.AVAILABLE)
+            .collect(Collectors.toList());
+
         return availableCopies.isEmpty();
     }
 }

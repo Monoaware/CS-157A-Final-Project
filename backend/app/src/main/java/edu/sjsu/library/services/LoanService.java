@@ -7,18 +7,14 @@ import edu.sjsu.library.dao.BookRecordDAO;
 import edu.sjsu.library.dao.UserDAO;
 import edu.sjsu.library.dao.FineDAO;
 import edu.sjsu.library.dao.CopyDAO;
-import edu.sjsu.library.dao.TitleDAO;
 
 import edu.sjsu.library.models.User;
 import edu.sjsu.library.models.BookRecord;
 import edu.sjsu.library.models.Fine;
 import edu.sjsu.library.models.Copy;
-import edu.sjsu.library.models.Title;
 
-import edu.sjsu.library.exceptions.BookAlreadyReturnedException;
 import edu.sjsu.library.exceptions.AuthorizationFailedException;
 import edu.sjsu.library.exceptions.CheckoutNotAllowedException;
-import edu.sjsu.library.exceptions.ReturnNotAllowedException;
 import edu.sjsu.library.exceptions.RenewalNotAllowedException;
 import edu.sjsu.library.exceptions.AuthenticationFailedException;
 
@@ -37,7 +33,6 @@ public class LoanService {
     private final UserDAO userDAO;
     private final FineDAO fineDAO;
     private final CopyDAO copyDAO;
-    private final TitleDAO titleDAO;
 
     // Business rule constants (service-level policies):
     private static final int MAX_ACTIVE_LOANS = 5; // Users can checkout a limited number of books at a time.
@@ -45,10 +40,9 @@ public class LoanService {
     private static final BigDecimal OVERDUE_FINE = new BigDecimal("5.00");
 
     // Constructor:
-    public LoanService(BookRecordDAO bookRecordDAO, UserDAO userDAO, TitleDAO bookDAO, FineDAO fineDAO, CopyDAO copyDAO) {
+    public LoanService(BookRecordDAO bookRecordDAO, UserDAO userDAO, FineDAO fineDAO, CopyDAO copyDAO) {
         this.bookRecordDAO = bookRecordDAO;
         this.userDAO = userDAO;
-        this.titleDAO = titleDAO;
         this.fineDAO = fineDAO;
         this.copyDAO = copyDAO;
     }
@@ -175,7 +169,7 @@ public class LoanService {
             if (loan.getUserID() != requestorID) {
                 throw new AuthorizationFailedException("You can only renew your own loans.");
             }
-            if (hasExcessiveOutstandingFines(loan.getUserID)) {
+            if (hasExcessiveOutstandingFines(loan.getUserID())) {
                 throw new CheckoutNotAllowedException("Cannot renew with outstanding fines.");
             }
         }
