@@ -1,3 +1,11 @@
+-- Drop existing tables if they exist (for development/testing purposes)
+DROP TABLE IF EXISTS holds CASCADE;
+DROP TABLE IF EXISTS fines CASCADE;
+DROP TABLE IF EXISTS book_records CASCADE;
+DROP TABLE IF EXISTS copies CASCADE;
+DROP TABLE IF EXISTS titles CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
@@ -12,7 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Titles table
 CREATE TABLE IF NOT EXISTS titles (
     id SERIAL PRIMARY KEY,
-    ISBN VARCHAR(255) NOT NULL,
+    ISBN VARCHAR(255) UNIQUE NOT NULL,
     title VARCHAR(255) NOT NULL,
     author VARCHAR(255) NOT NULL,
     yearPublished INT NOT NULL,

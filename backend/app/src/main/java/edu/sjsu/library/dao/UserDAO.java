@@ -88,8 +88,8 @@ public class UserDAO {
      public int insert(User u) {
          Integer newId = jdbc.queryForObject(
              """
-             INSERT INTO users (fname, lname, email, passwordhash, role)
-             VALUES (?, ?, ?, ?, ?)
+             INSERT INTO users (fname, lname, email, passwordhash, role, status)
+             VALUES (?, ?, ?, ?, ?, ?)
              RETURNING id
              """,
              Integer.class,
