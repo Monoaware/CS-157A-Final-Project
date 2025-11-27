@@ -8,6 +8,9 @@ import edu.sjsu.library.exceptions.UserAlreadyExistsException;
 import edu.sjsu.library.exceptions.AuthenticationFailedException;
 import edu.sjsu.library.exceptions.UserStatusChangeNotAllowedException;
 import org.mindrot.jbcrypt.BCrypt;
+import edu.sjsu.library.utils.AuthorizationUtils;
+import java.util.List;
+import java.util.stream.Collectors; 
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,10 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
     private final UserDAO userDao;
     private final int bcryptWorkFactor = 12;
+    private final AuthorizationUtils authUtils;
 
     // Constructor.
-    public UserService(UserDAO userDao) {
+    public UserService(UserDAO userDao, AuthorizationUtils authUtils) {
         this.userDao = userDao;
+        this.authUtils = authUtils;
     }
 
     // 1. Registration.
@@ -97,4 +102,40 @@ public class UserService {
     // 6. User lookups.
     public User findByEmail(String email) { return userDao.findByEmail(email); }
     public User findById(int userID) { return userDao.findById(userID); }
+
+    // 7. View all users (STAFF-only function).
+    public List<User> getAllUsers(int requestorID) {
+
+        // Verify staff authorization.
+        authUtils.validateStaffAccess(requestorID);
+    
+        // Return all users.
+        return userDao.findAll();
+    }
+
+    // 8. View all STAFF (STAFF-only function).
+    public List<User> getAllStaff(int requestorID) {
+
+        // Verify staff authorization.
+        authUtils.validateStaffAccess(requestorID);
+    
+        // Get all users and filter for staff members.
+        List<User> allUsers = userDao.findAll();
+        return allUsers.stream()
+                .filter(User::isStaff)
+                .collect(Collectors.toList());
+    }
+
+    // 9. View all MEMBERS (STAFF-only function).
+    public List<User> getAllMembers(int requestorID) {
+
+    // Verify staff authorization.
+    authUtils.validateStaffAccess(requestorID);
+    
+    // Get all users and filter for members (non-staff).
+    List<User> allUsers = userDao.findAll();
+    return allUsers.stream()
+            .filter(user -> !user.isStaff())
+            .collect(Collectors.toList());
+    }
 }
