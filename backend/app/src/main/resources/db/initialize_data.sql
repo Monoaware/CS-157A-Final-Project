@@ -10,10 +10,10 @@ ON CONFLICT (email) DO NOTHING;
 
 -- Insert sample titles
 INSERT INTO titles (ISBN, title, author, yearPublished, genre, isVisible) VALUES
-('978-0-13-110362-7', 'The C Programming Language', 'Brian W. Kernighan', 1988, 'Computer Science', TRUE),
-('978-0-201-61622-4', 'The Pragmatic Programmer', 'David Thomas', 1999, 'Computer Science', TRUE),
-('978-0-201-63361-0', 'Design Patterns', 'Gang of Four', 1994, 'Computer Science', TRUE),
-('978-0-262-03384-8', 'Introduction to Algorithms', 'Thomas H. Cormen', 2009, 'Computer Science', TRUE),
+('978-0-13-110362-7', 'The C Programming Language', 'Brian W. Kernighan', 1988, 'ART', TRUE),
+('978-0-201-61622-4', 'The Pragmatic Programmer', 'David Thomas', 1999, 'ART', TRUE),
+('978-0-201-63361-0', 'Design Patterns', 'Gang of Four', 1994, 'ART', TRUE),
+('978-0-262-03384-8', 'Introduction to Algorithms', 'Thomas H. Cormen', 2009, 'ART', TRUE),
 ('978-0-14-028329-7', 'To Kill a Mockingbird', 'Harper Lee', 1960, 'Fiction', TRUE)
 ON CONFLICT (isbn) DO NOTHING;
 
