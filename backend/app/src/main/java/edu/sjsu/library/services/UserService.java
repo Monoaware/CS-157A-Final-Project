@@ -29,7 +29,7 @@ public class UserService {
 
     // 1. Registration.
     @Transactional
-    public User register(String fname, String lname, String email, String rawPassword, User.UserRole role) {
+    private User register(String fname, String lname, String email, String rawPassword, User.UserRole role) {
         // Public registration (no requestor) delegates to the main implementation.
         return register(fname, lname, email, rawPassword, role, null);
     }

@@ -281,7 +281,7 @@ public class LoanService {
         }
     }
 
-    // 5. View loan record by book title. This is a STAFF only function.
+    // 6. View loan record by book title. This is a STAFF only function.
     public List<BookRecord> getLoanHistoryByTitle(int requestorID, int titleID) {
         // Find the user who is requesting the service.
         User requestor = userDAO.findById(requestorID);
@@ -306,7 +306,7 @@ public class LoanService {
         return allLoans;
     }
 
-    // 6. View loan record by specific copy. This is a STAFF only function.
+    // 7. View loan record by specific copy. This is a STAFF only function.
     public List<BookRecord> getLoanHistoryByCopy(int requestorID, int copyID) {
         // Find the user who is requesting the service.
         User requestor = userDAO.findById(requestorID);
@@ -329,7 +329,7 @@ public class LoanService {
         return bookRecordDAO.findByCopy(copyID);
     }
 
-    // 7. Get current loan for a specific copy. This is a STAFF only function.
+    // 8. Get current loan for a specific copy. This is a STAFF only function.
     public BookRecord getCurrentLoanByCopy(int requestorID, int copyID) {
         // Find the user who is requesting the service.
         User requestor = userDAO.findById(requestorID);
@@ -344,5 +344,27 @@ public class LoanService {
         
         // Get the current active loan for this copy (if any)
         return bookRecordDAO.findActiveByCopy(copyID);
+    }
+
+    // 9. Get a specific loan by ID. Staff can view any loan, members can only view their own loans.
+    public BookRecord getLoanById(int requestorID, int loanID) {
+        // Find the user who is requesting the service.
+        User requestor = userDAO.findById(requestorID);
+        if (requestor == null) {
+            throw new AuthenticationFailedException("User not found.");
+        }
+        
+        // Get the loan record.
+        BookRecord loan = bookRecordDAO.findById(loanID);
+        if (loan == null) {
+            return null;
+        }
+        
+        // Authorization: staff can view any loan, members can only view their own.
+        if (!requestor.isStaff() && loan.getUserID() != requestorID) {
+            throw new AuthorizationFailedException("You can only view your own loan records.");
+        }
+        
+        return loan;
     }
 }

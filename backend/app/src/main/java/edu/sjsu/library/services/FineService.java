@@ -76,7 +76,7 @@ public class FineService {
 
     // 3. Pay a fine. This is intended only for MEMBERS. 
     // This also implies that fines CANNOT be paid partially (for now).
-    public void payFine(int fineID, int requestorID) {
+    public Fine payFine(int fineID, int requestorID) {
         // Get the fine and the user that it belongs to from the database.
         Fine fine = fineDAO.findById(fineID);
         if (fine == null) {
@@ -99,10 +99,13 @@ public class FineService {
 
         // Persist the change to DB:
         fineDAO.update(fine);
+        
+        // Return the updated fine
+        return fineDAO.findById(fineID);
     }
 
     // 4. Waive a fine. THIS IS AN ADMIN ONLY ACTION!
-    public void waiveFine(int fineID, int requestorID) {
+    public Fine waiveFine(int fineID, int requestorID) {
         // Check that the user calling this function is STAFF:
         User requestor = userDAO.findById(requestorID);
         if (requestor == null) {
@@ -124,6 +127,9 @@ public class FineService {
 
         // Persist the change to DB:
         fineDAO.update(fine);
+        
+        // Return the updated fine
+        return fineDAO.findById(fineID);
     }
 
     // 5. Create a new fine. THIS IS AN ADMIN ONLY ACTION!
@@ -173,5 +179,44 @@ public class FineService {
         // Authorization concern: STAFF should be able to view this for all users, MEMBERS can only view their own fines.
         // Handled by getOutstandingFines().
         return !getOutstandingFines(requestorID, subjectUserID).isEmpty();
+    }
+
+    // 8. Get all fines (STAFF only).
+    public List<Fine> getAllFines(int requestorID) {
+        User requestor = userDAO.findById(requestorID);
+        if (requestor == null) {
+            throw new AuthenticationFailedException("User not found.");
+        }
+        
+        if (!requestor.isStaff()) {
+            throw new AuthorizationFailedException("Access denied: staff privileges required.");
+        }
+        
+        return fineDAO.findAll();
+    }
+
+    // 9. Get fines by user (alias for getUserFines with different parameter order for controller convenience).
+    public List<Fine> getFinesByUser(int subjectUserID, int requestorID) {
+        return getUserFines(requestorID, subjectUserID);
+    }
+
+    // 10. Get single fine by ID.
+    public Fine getFineById(int fineID, int requestorID) {
+        User requestor = userDAO.findById(requestorID);
+        if (requestor == null) {
+            throw new AuthenticationFailedException("User not found.");
+        }
+        
+        Fine fine = fineDAO.findById(fineID);
+        if (fine == null) {
+            return null;
+        }
+        
+        // Authorization: staff can view any fine, members can only view their own.
+        if (!requestor.isStaff() && fine.getUserID() != requestorID) {
+            throw new AuthorizationFailedException("You can only view your own fines.");
+        }
+        
+        return fine;
     }
 }
