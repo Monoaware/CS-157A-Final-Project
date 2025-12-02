@@ -23,6 +23,8 @@ public class HoldController {
         this.authUtils = authUtils;
     }
 
+    // POST /api/holds/{titleID}
+    // Place hold on a title (MEMBERS ONLY - staff cannot place holds).
     @PostMapping("/{titleID}")
     @ResponseBody
     public ResponseEntity<Hold> placeHold(
@@ -35,6 +37,8 @@ public class HoldController {
         return ResponseEntity.status(201).body(created);
     }
 
+    // DELETE /api/holds/{holdID}
+    // Cancel hold (MEMBERS cancel own, STAFF can cancel any).
     @DeleteMapping("/{holdID}")
     @ResponseBody
     public ResponseEntity<Void> cancelHold(
@@ -48,6 +52,8 @@ public class HoldController {
                        : ResponseEntity.notFound().build();
     }
 
+    // POST /api/holds/process/{titleID}/{copyID}.
+    // Process next hold when copy available (STAFF ONLY).
     @PostMapping("/process/{titleID}/{copyID}")
     @ResponseBody
     public ResponseEntity<Hold> processNextHold(
@@ -56,12 +62,15 @@ public class HoldController {
             HttpServletRequest request) {
 
         int requestorID = getRequestorId(request);
+        authUtils.validateStaffAccess(requestorID); // Staff only.
 
         Hold updated = holdService.processNextHold(titleID, copyID, requestorID);
         return ResponseEntity.ok(updated);
     }
 
 
+    // POST /api/holds/pickup/{holdID}
+    // Complete hold pickup (STAFF ONLY).
     @PostMapping("/pickup/{holdID}")
     @ResponseBody
     public ResponseEntity<Void> completeHoldPickup(
@@ -69,20 +78,26 @@ public class HoldController {
             HttpServletRequest request) {
 
         int requestorID = getRequestorId(request);
+        authUtils.validateStaffAccess(requestorID); // Staff only.
 
         boolean success = holdService.completeHoldPickup(holdID, requestorID);
         return success ? ResponseEntity.noContent().build()
                        : ResponseEntity.notFound().build();
     }
 
+    // POST /api/holds/expired.
+    // Process expired holds (STAFF ONLY - typically scheduled job).
     @PostMapping("/expired")
     @ResponseBody
     public ResponseEntity<List<Hold>> processExpiredHolds(HttpServletRequest request) {
         int requestorID = getRequestorId(request);
+        authUtils.validateStaffAccess(requestorID); // Staff only.
         List<Hold> expired = holdService.processExpiredHolds(requestorID);
         return ResponseEntity.ok(expired);
     }
 
+    // GET /api/holds/user/{userID}
+    // Get user's holds (MEMBERS see own, STAFF can see any).
     @GetMapping("/user/{userID}")
     @ResponseBody
     public ResponseEntity<List<Hold>> getUserHolds(
@@ -95,6 +110,8 @@ public class HoldController {
         return ResponseEntity.ok(holds);
     }
 
+    // GET /api/holds/title/{titleID}
+    // Get holds for a title (STAFF ONLY).
     @GetMapping("/title/{titleID}")
     @ResponseBody
     public ResponseEntity<List<Hold>> getHoldsForTitle(
@@ -102,11 +119,14 @@ public class HoldController {
             HttpServletRequest request) {
 
         int requestorID = getRequestorId(request);
+        authUtils.validateStaffAccess(requestorID); // Staff only.
 
         List<Hold> holds = holdService.getHoldsForTitle(titleID, requestorID);
         return ResponseEntity.ok(holds);
     }
 
+    // GET /api/holds/{holdID}/position
+    // Get hold queue position (MEMBERS see own, STAFF can see any).
     @GetMapping("/{holdID}/position")
     @ResponseBody
     public ResponseEntity<Integer> getHoldPosition(
@@ -119,6 +139,8 @@ public class HoldController {
         return ResponseEntity.ok(pos);
     }
 
+    // GET /api/holds/canPlace
+    // Check if user can place hold (MEMBERS check own, STAFF can check any).
     @GetMapping("/canPlace")
     @ResponseBody
     public ResponseEntity<Boolean> canPlaceHold(
