@@ -9,17 +9,22 @@ import java.util.List;
 
 import edu.sjsu.library.models.BookRecord;
 import edu.sjsu.library.services.LoanService;
+import edu.sjsu.library.utils.AuthorizationUtils;
 
 @Controller
 @RequestMapping("/api/loans")
 public class BookRecordController {
 
     private final LoanService loanService;
+    private final AuthorizationUtils authUtils;
 
-    public BookRecordController(LoanService loanService) {
+    public BookRecordController(LoanService loanService, AuthorizationUtils authUtils) {
         this.loanService = loanService;
+        this.authUtils = authUtils;
     }
 
+    // POST /api/loans/checkout
+    // Checkout book (MEMBERS ONLY - staff cannot checkout).
     @PostMapping("/checkout")
     @ResponseBody
     public ResponseEntity<BookRecord> checkoutBook(
@@ -31,6 +36,8 @@ public class BookRecordController {
         return ResponseEntity.status(201).body(loan);
     }
 
+    // POST /api/loans/renew/{loanID}
+    // Renew loan (MEMBERS renew own, STAFF can renew any and bypass limits).
     @PostMapping("/renew/{loanID}")
     @ResponseBody
     public ResponseEntity<BookRecord> renewLoan(
@@ -42,6 +49,8 @@ public class BookRecordController {
         return ResponseEntity.ok(renewed);
     }
 
+    // POST /api/loans/return/{loanID}
+    // Return book (MEMBERS ONLY - staff cannot return).
     @PostMapping("/return/{loanID}")
     @ResponseBody
     public ResponseEntity<BookRecord> returnBook(
@@ -53,6 +62,8 @@ public class BookRecordController {
         return ResponseEntity.ok(returned);
     }
 
+    // GET /api/loans/user/{userID}
+    // Get loan history by user (MEMBERS see own, STAFF see any).
     @GetMapping("/user/{userID}")
     @ResponseBody
     public ResponseEntity<List<BookRecord>> getLoanHistoryByUser(
@@ -64,6 +75,8 @@ public class BookRecordController {
         return ResponseEntity.ok(loans);
     }
 
+    // GET /api/loans/user/{userID}/current
+    // Get current loans by user (MEMBERS see own, STAFF see any).
     @GetMapping("/user/{userID}/current")
     @ResponseBody
     public ResponseEntity<List<BookRecord>> getCurrentLoansByUser(
@@ -75,6 +88,8 @@ public class BookRecordController {
         return ResponseEntity.ok(loans);
     }
 
+    // GET /api/loans/title/{titleID}
+    // Get loan history by title (STAFF ONLY).
     @GetMapping("/title/{titleID}")
     @ResponseBody
     public ResponseEntity<List<BookRecord>> getLoanHistoryByTitle(
@@ -82,10 +97,13 @@ public class BookRecordController {
             HttpServletRequest request) {
 
         int requestorID = getRequestorId(request);
+        authUtils.validateStaffAccess(requestorID); // Staff only.
         List<BookRecord> loans = loanService.getLoanHistoryByTitle(requestorID, titleID);
         return ResponseEntity.ok(loans);
     }
 
+    // GET /api/loans/copy/{copyID}
+    // Get loan history by copy (STAFF ONLY).
     @GetMapping("/copy/{copyID}")
     @ResponseBody
     public ResponseEntity<List<BookRecord>> getLoanHistoryByCopy(
@@ -93,10 +111,13 @@ public class BookRecordController {
             HttpServletRequest request) {
 
         int requestorID = getRequestorId(request);
+        authUtils.validateStaffAccess(requestorID); // Staff only.
         List<BookRecord> loans = loanService.getLoanHistoryByCopy(requestorID, copyID);
         return ResponseEntity.ok(loans);
     }
 
+    // GET /api/loans/copy/{copyID}/current
+    // Get current loan by copy (STAFF ONLY).
     @GetMapping("/copy/{copyID}/current")
     @ResponseBody
     public ResponseEntity<BookRecord> getCurrentLoanByCopy(
@@ -104,6 +125,7 @@ public class BookRecordController {
             HttpServletRequest request) {
 
         int requestorID = getRequestorId(request);
+        authUtils.validateStaffAccess(requestorID); // Staff only.
         BookRecord loan = loanService.getCurrentLoanByCopy(requestorID, copyID);
         return loan != null ? ResponseEntity.ok(loan) : ResponseEntity.notFound().build();
     }
