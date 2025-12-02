@@ -12,6 +12,8 @@ import edu.sjsu.library.models.Fine;
 import edu.sjsu.library.models.User;
 import edu.sjsu.library.utils.AuthorizationUtils;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Controller
@@ -154,6 +156,50 @@ public class FineController {
         
         return "user-fines"; // Resolves to src/main/resources/templates/user-fines.html
     }
+
+    // GET /fines/create
+    // Staff-only: displays form to create a fine for a user/book.
+    @GetMapping("/create")
+    public String showCreateFineForm(HttpServletRequest request, Model model) {
+        int requestorID = getRequestorId(request);
+        authUtils.validateStaffAccess(requestorID); // Staff only
+
+        model.addAttribute("users", userService.getAllMembers(requestorID));
+        model.addAttribute("fine", new Fine(0, 0, BigDecimal.ZERO, ""));
+        return "fine-create"; // form page
+    }
+
+    // POST /fines/create
+    // Staff-only: creates a fine for a specific user and loan.
+    @PostMapping("/create")
+    public String createFine(
+            @RequestParam int userId,
+            @RequestParam int loanId,
+            @RequestParam String amount,
+            @RequestParam String reason,
+            HttpServletRequest request,
+            Model model) {
+
+        int requestorID = getRequestorId(request);
+
+        try {
+            authUtils.validateStaffAccess(requestorID); // Ensure staff
+
+            // Convert String → BigDecimal safely
+            BigDecimal fineAmount = new BigDecimal(amount);
+
+            fineService.createFine(userId, loanId, fineAmount, reason, requestorID);
+
+            model.addAttribute("success", "Fine created successfully.");
+            return "redirect:/fines";
+        } catch (Exception e) {
+            model.addAttribute("error", "Failed to create fine: " + e.getMessage());
+            model.addAttribute("users", userService.getAllMembers(requestorID));
+            return "fine-create";
+        }
+    }
+
+
 
     // Helper: Extract requestor ID from session.
     private int getRequestorId(HttpServletRequest req) {
