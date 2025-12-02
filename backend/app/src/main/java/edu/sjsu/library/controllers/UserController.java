@@ -64,7 +64,7 @@ public class UserController {
         // This validates: staff can access any, members can only access their own.
         authUtils.validateUserDataAccess(requestorID, id);
 
-        User u = userService.findById(requestorID);
+        User u = userService.findById(id);
         if (u == null) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(u);
     }
