@@ -102,7 +102,7 @@ public class UserDAO {
     public int update(User u) {
         return jdbc.update(
             "UPDATE users SET fname = ?, lname = ?, email = ?, passwordhash = ?, role = ?, status = ? WHERE id = ?",
-            u.getFname(), u.getLname(), u.getEmail(), u.getPasswordHash(), u.getRole(), u.getStatus().name(), u.getUserID()
+            u.getFname(), u.getLname(), u.getEmail(), u.getPasswordHash(), u.getRole().name(), u.getStatus().name(), u.getUserID()
         );
     }
 

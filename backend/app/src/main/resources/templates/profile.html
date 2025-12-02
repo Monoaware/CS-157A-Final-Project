@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>User Profile</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px 40px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border: 1px solid white;
+            padding: 6px 12px;
+            border-radius: 5px;
+        }
+        .back-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .container {
+            margin-top: 40px;
+            background: white;
+            padding: 25px 30px;
+            width: 400px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        label {
+            font-weight: bold;
+            margin-top: 12px;
+            display: block;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            font-size: 15px;
+        }
+
+        .btn-save {
+            background: #3498db;
+            color: white;
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-save:hover {
+            background: #2980b9;
+        }
+
+        .status-box {
+            text-align: center;
+            font-size: 14px;
+            margin-top: 12px;
+        }
+
+        .status-success {
+            color: #27ae60;
+        }
+
+        .status-error {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Your Profile</h1>
+    <a href="/dashboard" class="back-btn">← Back to Dashboard</a>
+</header>
+
+<div class="container">
+    <h2>Account Details</h2>
+
+    <form id="profileForm">
+
+        <label for="fname">First Name</label>
+        <input id="fname" type="text" required>
+
+        <label for="lname">Last Name</label>
+        <input id="lname" type="text" required>
+
+        <label for="email">Email</label>
+        <input id="email" type="email" required>
+
+        <label>Status</label>
+        <input id="status" type="text" disabled style="background: #eee;">
+
+        <label>Role</label>
+        <input id="role" type="text" disabled style="background: #eee;">
+
+        <button class="btn-save" type="submit">Save Changes</button>
+
+        <div id="statusMessage" class="status-box"></div>
+    </form>
+</div>
+
+
+<script>
+    let currentUserId = null;
+
+    // Fetch current user data from /api/users/me
+    async function loadProfile() {
+        const res = await fetch("/api/users/me");
+        if (!res.ok) {
+            window.location.href = "/"; // not logged in
+            return;
+        }
+
+        const user = await res.json();
+
+        // Try both common id field names
+        currentUserId = user.userID ?? user.userId ?? user.id;
+
+        if (currentUserId == null) {
+            console.error("Could not determine user id from /api/users/me:", user);
+        }
+
+        document.getElementById("fname").value = user.fname ?? "";
+        document.getElementById("lname").value = user.lname ?? "";
+        document.getElementById("email").value = user.email ?? "";
+        document.getElementById("status").value = user.status ?? "";
+        document.getElementById("role").value = user.role ?? "";
+    }
+
+    // Save updates
+    document.getElementById("profileForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const msg = document.getElementById("statusMessage");
+        msg.textContent = "";
+        msg.className = "status-box";
+
+        if (currentUserId == null) {
+            msg.textContent = "Cannot update: user id is unknown.";
+            msg.className = "status-box status-error";
+            return;
+        }
+
+        const body = {
+            fname: document.getElementById("fname").value,
+            lname: document.getElementById("lname").value,
+            email: document.getElementById("email").value,
+            // status is required by UpdateUserRequest; for members backend can ignore it
+            status: document.getElementById("status").value
+        };
+
+        try {
+            const res = await fetch(`/api/users/${currentUserId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
+
+            if (res.ok) {
+                msg.textContent = "Profile updated successfully!";
+                msg.className = "status-box status-success";
+            } else {
+                console.error("Profile update failed, status:", res.status);
+                msg.textContent = "Failed to update profile.";
+                msg.className = "status-box status-error";
+            }
+        } catch (err) {
+            console.error("Error while updating profile:", err);
+            msg.textContent = "Network error while updating profile.";
+            msg.className = "status-box status-error";
+        }
+    });
+
+    loadProfile();
+</script>
+</body>
+</html>

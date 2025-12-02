@@ -5,7 +5,8 @@ INSERT INTO users (fname, lname, email, passwordhash, role, status) VALUES
 ('John', 'Doe', 'john.doe@example.com', '$2a$10$samplehash1', 'MEMBER', 'ACTIVE'),
 ('Jane', 'Smith', 'jane.smith@example.com', '$2a$10$samplehash2', 'MEMBER', 'ACTIVE'),
 ('Bob', 'Johnson', 'bob.johnson@example.com', '$2a$10$samplehash3', 'MEMBER', 'ACTIVE'),
-('Alice', 'Williams', 'alice.williams@example.com', '$2a$10$samplehash4', 'STAFF', 'ACTIVE')
+('Alice', 'Williams', 'alice.williams@example.com', '$2a$10$samplehash4', 'STAFF', 'ACTIVE'),
+('Admin', 'Admin', 'Admin@example.com', 'Admin', 'STAFF', 'ACTIVE')
 ON CONFLICT (email) DO NOTHING;
 
 -- Insert sample titles
