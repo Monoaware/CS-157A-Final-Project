@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>All Users - Library Management System</title>
+    <title>User Management - Library Management System</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -127,6 +127,21 @@
             background: #2980b9;
         }
 
+        .btn-secondary {
+            background: #bdc3c7;
+            color: #2c3e50;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: #a7b0b5;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -215,19 +230,91 @@
         </form>
     </div>
 
+    <!-- EDIT USER CARD -->
+    <div class="card" id="editUserCard" style="display:none;">
+        <h2>Edit User</h2>
+        <form id="editUserForm">
+            <input type="hidden" id="editUserId">
+
+            <div class="form-row">
+                <div>
+                    <label for="editFname">First Name</label>
+                    <input id="editFname" type="text" required>
+                </div>
+                <div>
+                    <label for="editLname">Last Name</label>
+                    <input id="editLname" type="text" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div>
+                    <label for="editEmail">Email</label>
+                    <input id="editEmail" type="email" required>
+                </div>
+                <div>
+                    <label for="editStatus">Status (e.g. ACTIVE, INACTIVE)</label>
+                    <input id="editStatus" type="text">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div style="max-width:200px;">
+                    <label for="editRole">Role</label>
+                    <input id="editRole" type="text" disabled>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary">Save Changes</button>
+            <button type="button" class="btn-secondary" id="cancelEditBtn">Cancel</button>
+
+            <div id="editUserError" class="error"></div>
+            <div id="editUserSuccess" class="success"></div>
+        </form>
+    </div>
+
+        <!-- FILTER USERS CARD -->
+    <div class="card">
+        <h2>Filter Users</h2>
+        <form id="filterForm">
+            <div class="form-row">
+                <div>
+                    <label for="filterEmail">Email (contains)</label>
+                    <input id="filterEmail" type="text" placeholder="Search by email">
+                </div>
+                <div>
+                    <label for="filterRole">Role</label>
+                    <select id="filterRole">
+                        <option value="">Any</option>
+                        <option value="MEMBER">MEMBER</option>
+                        <option value="STAFF">STAFF</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filterStatus">Status</label>
+                    <input id="filterStatus" type="text" placeholder="e.g. ACTIVE, INACTIVE">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary">Search</button>
+            <button type="button" class="btn-secondary" id="clearFiltersBtn">Clear</button>
+        </form>
+    </div>
+
     <!-- USERS TABLE -->
     <div class="card">
         <h2>All Users</h2>
         <table>
             <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>First</th>
-                    <th>Last</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                </tr>
+            <tr>
+                <th>ID</th>
+                <th>First</th>
+                <th>Last</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
             </thead>
             <tbody id="usersTableBody"></tbody>
         </table>
@@ -254,7 +341,6 @@
             }
             const me = await meRes.json();
             if (me.role !== "STAFF") {
-                // Not staff: send back to dashboard
                 window.location.href = "/dashboard";
                 return;
             }
@@ -266,14 +352,31 @@
         }
     }
 
-    async function loadUsers() {
+        async function loadUsers(filters = {}) {
         const tbody = document.getElementById("usersTableBody");
         const errorBox = document.getElementById("loadError");
         tbody.innerHTML = "";
         errorBox.textContent = "";
 
         try {
-            const res = await fetch("/api/users");
+            let url = "/api/users";
+            const params = [];
+
+            if (filters.email) {
+                params.push("email=" + encodeURIComponent(filters.email));
+            }
+            if (filters.role) {
+                params.push("role=" + encodeURIComponent(filters.role));
+            }
+            if (filters.status) {
+                params.push("status=" + encodeURIComponent(filters.status));
+            }
+
+            if (params.length > 0) {
+                url += "?" + params.join("&");
+            }
+
+            const res = await fetch(url);
             if (!res.ok) {
                 errorBox.textContent = "Unable to load users.";
                 return;
@@ -282,14 +385,28 @@
             const users = await res.json();
 
             users.forEach(u => {
+                const id = u.userID ?? u.id;
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                    <td>${u.userID ?? u.id}</td>
+                    <td>${id}</td>
                     <td>${u.fname ?? ""}</td>
                     <td>${u.lname ?? ""}</td>
                     <td>${u.email ?? ""}</td>
                     <td>${u.role ?? ""}</td>
                     <td>${u.status ?? ""}</td>
+                    <td>
+                        <button
+                            class="btn-secondary btn-edit"
+                            data-id="${id}"
+                            data-fname="${u.fname ?? ""}"
+                            data-lname="${u.lname ?? ""}"
+                            data-email="${u.email ?? ""}"
+                            data-status="${u.status ?? ""}"
+                            data-role="${u.role ?? ""}"
+                        >
+                            Edit
+                        </button>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -298,6 +415,7 @@
             errorBox.textContent = "Unexpected error while loading users.";
         }
     }
+
 
     // Handle Add User form submit
     document.getElementById("addUserForm").addEventListener("submit", async (e) => {
@@ -323,7 +441,7 @@
                     lname,
                     email,
                     password,
-                    role        // must be "STAFF" or "MEMBER" to match User.UserRole
+                    role        // must match User.UserRole (e.g., "STAFF", "MEMBER")
                 })
             });
 
@@ -333,9 +451,7 @@
             }
 
             okBox.textContent = "User created successfully!";
-            // Clear password field (and optionally others)
             document.getElementById("password").value = "";
-            // Reload user list
             await loadUsers();
 
         } catch (err) {
@@ -343,6 +459,103 @@
             errBox.textContent = "Network or server error while creating user.";
         }
     });
+
+    // Open Edit form when clicking "Edit"
+    document.addEventListener("click", (e) => {
+        if (!e.target.classList.contains("btn-edit")) return;
+
+        const btn = e.target;
+        const id = btn.dataset.id;
+        const fname = btn.dataset.fname;
+        const lname = btn.dataset.lname;
+        const email = btn.dataset.email;
+        const status = btn.dataset.status;
+        const role = btn.dataset.role;
+
+        document.getElementById("editUserId").value = id;
+        document.getElementById("editFname").value = fname;
+        document.getElementById("editLname").value = lname;
+        document.getElementById("editEmail").value = email;
+        document.getElementById("editStatus").value = status || "";
+        document.getElementById("editRole").value = role || "";
+
+        document.getElementById("editUserError").textContent = "";
+        document.getElementById("editUserSuccess").textContent = "";
+        document.getElementById("editUserCard").style.display = "block";
+
+        // scroll to edit card
+        document.getElementById("editUserCard").scrollIntoView({ behavior: "smooth" });
+    });
+
+    // Cancel edit
+    document.getElementById("cancelEditBtn").addEventListener("click", () => {
+        document.getElementById("editUserCard").style.display = "none";
+    });
+
+    // Handle Edit User submit
+    document.getElementById("editUserForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const id = document.getElementById("editUserId").value;
+        const fname = document.getElementById("editFname").value;
+        const lname = document.getElementById("editLname").value;
+        const email = document.getElementById("editEmail").value;
+        const status = document.getElementById("editStatus").value;
+
+        const errBox = document.getElementById("editUserError");
+        const okBox = document.getElementById("editUserSuccess");
+        errBox.textContent = "";
+        okBox.textContent = "";
+
+        try {
+            const res = await fetch(`/api/users/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    fname,
+                    lname,
+                    email,
+                    status  // must match User.UserStatus enum (e.g., "ACTIVE")
+                })
+            });
+
+            if (!res.ok) {
+                errBox.textContent = "Failed to update user.";
+                return;
+            }
+
+            okBox.textContent = "User updated successfully!";
+            await loadUsers();
+
+        } catch (err) {
+            console.error(err);
+            errBox.textContent = "Network or server error while updating user.";
+        }
+    });
+
+        // Handle Filter form submit
+    document.getElementById("filterForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById("filterEmail").value.trim();
+        const role = document.getElementById("filterRole").value;
+        const status = document.getElementById("filterStatus").value.trim();
+
+        await loadUsers({
+            email: email || null,
+            role: role || null,
+            status: status || null
+        });
+    });
+
+    // Clear filters
+    document.getElementById("clearFiltersBtn").addEventListener("click", async () => {
+        document.getElementById("filterEmail").value = "";
+        document.getElementById("filterRole").value = "";
+        document.getElementById("filterStatus").value = "";
+        await loadUsers(); // no filters
+    });
+
 
     initPage();
 </script>

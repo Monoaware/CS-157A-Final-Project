@@ -6,8 +6,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import edu.sjsu.library.models.User;
-import edu.sjsu.library.services.UserService;
 
 @Controller
 public class HomeController {
@@ -40,10 +38,6 @@ public class HomeController {
         return "profile"; 
     }
 
-    @GetMapping("/books")
-    public String books() {
-        return "books";
-    }
 
     @GetMapping("/loans")
     public String loans() {

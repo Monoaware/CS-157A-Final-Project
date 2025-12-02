@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Library Catalog</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px 40px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border: 1px solid white;
+            padding: 6px 12px;
+            border-radius: 5px;
+        }
+        .back-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            background: #e74c3c;
+            color: white;
+        }
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 1100px;
+            margin-top: 30px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .form-row > div {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px 10px;
+            margin-top: 4px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #bdc3c7;
+            color: #2c3e50;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-secondary:hover {
+            background: #a7b0b5;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ecf0f1;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #ecf0f1;
+            font-weight: 600;
+        }
+
+        tbody tr:hover {
+            background: #f8f9f9;
+        }
+
+        .error {
+            margin-top: 10px;
+            color: #e74c3c;
+            font-size: 13px;
+        }
+
+        .info {
+            margin-top: 10px;
+            color: #7f8c8d;
+            font-size: 13px;
+        }
+
+        .availability-badge {
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+        }
+
+        .available {
+            background: #27ae60;
+            color: white;
+        }
+
+        .unavailable {
+            background: #e67e22;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Library Catalog</h1>
+    <div class="header-right">
+        <a href="/dashboard" class="back-btn">← Back to Dashboard</a>
+        <button class="logout-btn" id="logoutButton">Logout</button>
+    </div>
+</header>
+
+<main>
+
+    <!-- Filter / search -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Search Titles</h2>
+            <!-- Staff-only: Add Title button -->
+            <a th:if="${isStaff}" href="/titles/add" class="btn-primary">Add New Title</a>
+        </div>
+
+        <form th:action="@{/titles}" method="get" id="filterForm">
+            <div class="form-row">
+                <div>
+                    <label for="author">Author</label>
+                    <input id="author" name="author" type="text"
+                           th:value="${param.author}" placeholder="e.g. J.K. Rowling">
+                </div>
+                <div>
+                    <label for="genre">Genre</label>
+                    <select id="genre" name="genre">
+                        <option value="">Any</option>
+                        <option th:each="g : ${genres}"
+                                th:value="${g.name()}"
+                                th:text="${g.name()}"
+                                th:selected="${param.genre} == ${g.name()}">
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div>
+                    <label for="startYear">Start Year</label>
+                    <input id="startYear" name="startYear" type="number" min="0"
+                           th:value="${param.startYear}">
+                </div>
+                <div>
+                    <label for="endYear">End Year</label>
+                    <input id="endYear" name="endYear" type="number" min="0"
+                           th:value="${param.endYear}">
+                </div>
+                <div style="display:flex; align-items:center; margin-top:15px;">
+                    <input id="availableOnly" name="availableOnly" type="checkbox"
+                           th:checked="${param.availableOnly} == 'true'"/>
+                    <label for="availableOnly" style="margin:0;">Available only</label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary">Search</button>
+            <a href="/titles" class="btn-secondary">Clear</a>
+        </form>
+
+        <div th:if="${error}" class="error" th:text="${error}"></div>
+        <div th:if="${info}" class="info" th:text="${info}"></div>
+    </div>
+
+    <!-- Titles list -->
+    <div class="card">
+        <h2>All Titles</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>ISBN</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Year</th>
+                <th>Genre</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${#lists.isEmpty(titles)}">
+                <td colspan="7" class="info">No titles found.</td>
+            </tr>
+            <tr th:each="t : ${titles}">
+                <td th:text="${t.titleID}">1</td>
+                <td th:text="${t.ISBN}">1234567890</td>
+                <td>
+                    <a th:href="@{/titles/{id}(id=${t.titleID})}"
+                       th:text="${t.title}">Book Title</a>
+                </td>
+                <td th:text="${t.author}">Author Name</td>
+                <td th:text="${t.yearPublished}">2000</td>
+                <td th:text="${t.genre}">GENRE</td>
+                <td>
+                    <a th:href="@{/titles/{id}(id=${t.titleID})}"
+                       class="btn-secondary">View</a>
+
+                    <!-- Staff-only actions -->
+                    <a th:if="${isStaff}"
+                       th:href="@{/titles/{id}/edit(id=${t.titleID})}"
+                       class="btn-secondary">Edit</a>
+
+                    <form th:if="${isStaff}"
+                          th:action="@{/titles/{id}/delete(id=${t.titleID})}"
+                          method="post"
+                          style="display:inline;">
+                        <button type="submit" class="btn-secondary"
+                                onclick="return confirm('Delete this title?');">
+                            Delete
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</main>
+
+<script>
+    document.getElementById("logoutButton").addEventListener("click", async () => {
+        try {
+            await fetch("/api/auth/logout", { method: "POST" });
+        } catch (e) {}
+        window.location.href = "/";
+    });
+</script>
+
+</body>
+</html>

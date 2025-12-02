@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${title.title}">Book Details</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px 40px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border: 1px solid white;
+            padding: 6px 12px;
+            border-radius: 5px;
+        }
+        .back-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            background: #e74c3c;
+            color: white;
+        }
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 900px;
+            margin-top: 30px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 30px;
+        }
+
+        .details-grid div span.label {
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ecf0f1;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #ecf0f1;
+            font-weight: 600;
+        }
+
+        tbody tr:hover {
+            background: #f8f9f9;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-primary[disabled] {
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        .status-available {
+            color: #27ae60;
+            font-weight: 600;
+        }
+        .status-unavailable {
+            color: #e67e22;
+            font-weight: 600;
+        }
+
+        .message {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        .message.error {
+            color: #e74c3c;
+        }
+        .message.success {
+            color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1 th:text="${title.title}">Book Title</h1>
+    <div class="header-right">
+        <a href="/titles" class="back-btn">← Back to Catalog</a>
+        <button class="logout-btn" id="logoutButton">Logout</button>
+    </div>
+</header>
+
+<main>
+    <!-- Book details -->
+    <div class="card">
+        <h2>Book Details</h2>
+        <div class="details-grid">
+            <div>
+                <span class="label">Author: </span>
+                <span th:text="${title.author}">Author Name</span>
+            </div>
+            <div>
+                <span class="label">ISBN: </span>
+                <span th:text="${title.isbn}">1234567890</span>
+            </div>
+            <div>
+                <span class="label">Year Published: </span>
+                <span th:text="${title.yearPublished}">2000</span>
+            </div>
+            <div>
+                <span class="label">Genre: </span>
+                <span th:text="${title.genre}">GENRE</span>
+            </div>
+        </div>
+
+        <div style="margin-top:15px;">
+            <span class="label">Availability: </span>
+            <span th:if="${availability != null}">
+                <span th:text="${availability.availableCopies}">0</span> /
+                <span th:text="${availability.totalCopies}">0</span> copies available
+            </span>
+            <span th:if="${availability == null}">
+                No availability information.
+            </span>
+        </div>
+    </div>
+
+    <!-- Copies list -->
+    <div class="card">
+        <h2>Copies</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Copy ID</th>
+                <th>Barcode</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Visible</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody id="copiesTableBody">
+            <!-- Filled by JS -->
+            </tbody>
+        </table>
+        <div id="copiesMessage" class="message"></div>
+    </div>
+</main>
+
+<script th:inline="javascript">
+    // Values from server
+    const titleId = "[[${title.titleID}]]";
+    const isStaff = "[[${isStaff}]]";
+
+    document.getElementById("logoutButton").addEventListener("click", async () => {
+        try {
+            await fetch("/api/auth/logout", { method: "POST" });
+        } catch (e) {}
+        window.location.href = "/";
+    });
+
+    async function loadCopies() {
+        const tbody  = document.getElementById("copiesTableBody");
+        const msgBox = document.getElementById("copiesMessage");
+        tbody.innerHTML = "";
+        msgBox.textContent = "";
+        msgBox.className = "message";
+
+        try {
+            // Use CopyController:
+            const res = await fetch(`/api/copies/title/${titleId}`);
+            if (!res.ok) {
+                msgBox.textContent = "Failed to load copies.";
+                msgBox.classList.add("error");
+                return;
+            }
+
+            const copies = await res.json();
+
+            if (!Array.isArray(copies) || copies.length === 0) {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td colspan="6" class="message">No copies found for this title.</td>`;
+                tbody.appendChild(tr);
+                return;
+            }
+
+            copies.forEach(c => {
+                const tr = document.createElement("tr");
+
+                // Adjust field names here to match your Copy model
+                const status   = c.status || c.copyStatus || "";
+                const visible  = (c.visible === undefined || c.visible === null) ? "" : c.visible;
+                const barcode  = c.barcode ?? "";
+                const location = c.location ?? "";
+
+                // "Available" heuristic: status enum name is AVAILABLE (tweak if yours differ)
+                const isAvailable = (status === "AVAILABLE");
+
+                tr.innerHTML = `
+                    <td>${c.copyID}</td>
+                    <td>${barcode}</td>
+                    <td>${location}</td>
+                    <td>
+                        <span class="${isAvailable ? "status-available" : "status-unavailable"}">
+                            ${status || (isAvailable ? "AVAILABLE" : "UNAVAILABLE")}
+                        </span>
+                    </td>
+                    <td>${visible}</td>
+                    <td>
+                        <button class="btn-primary"
+                                ${isAvailable && !isStaff ? "" : "disabled"}
+                                data-barcode="${barcode}">
+                            ${isAvailable ? (isStaff ? "Members Only" : "Check Out") : "Unavailable"}
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+        } catch (err) {
+            console.error(err);
+            msgBox.textContent = "Unexpected error while loading copies.";
+            msgBox.classList.add("error");
+        }
+    }
+
+    // Checkout handler: uses BookRecordController (/api/loans/checkout?barcode=...)
+    document.getElementById("copiesTableBody").addEventListener("click", async (e) => {
+        if (e.target.tagName !== "BUTTON") return;
+        const btn = e.target;
+        const barcode = btn.getAttribute("data-barcode");
+        if (!barcode || btn.disabled) return;
+
+        const msgBox = document.getElementById("copiesMessage");
+        msgBox.textContent = "";
+        msgBox.className = "message";
+
+        try {
+            const res = await fetch(`/api/loans/checkout?barcode=${encodeURIComponent(barcode)}`, {
+                method: "POST"
+            });
+
+            if (!res.ok) {
+                msgBox.textContent = "Failed to check out copy (only members can checkout, or copy may not be available).";
+                msgBox.classList.add("error");
+                return;
+            }
+
+            msgBox.textContent = "Copy checked out successfully!";
+            msgBox.classList.add("success");
+
+            // Refresh list to update statuses
+            await loadCopies();
+
+        } catch (err) {
+            console.error(err);
+            msgBox.textContent = "Network error while checking out copy.";
+            msgBox.classList.add("error");
+        }
+    });
+
+    loadCopies();
+</script>
+
+</body>
+</html>
