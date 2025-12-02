@@ -94,6 +94,12 @@ public class UserService {
         if (user == null) throw new IllegalArgumentException("Status change failed: user not found.");
 
         User.UserStatus currentStatus = user.getStatus();
+        
+        // If status is already the desired status, skip the change
+        if (currentStatus == newStatus) {
+            return; // No change needed
+        }
+        
         if (currentStatus == User.UserStatus.RESTRICTED && newStatus == User.UserStatus.ACTIVE) {
             throw new UserStatusChangeNotAllowedException("Status change failed: please see library staff to lift restriction.");
         }
