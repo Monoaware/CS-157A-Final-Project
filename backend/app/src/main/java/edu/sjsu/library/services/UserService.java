@@ -30,6 +30,21 @@ public class UserService {
     // 1. Registration.
     @Transactional
     public User register(String fname, String lname, String email, String rawPassword, User.UserRole role) {
+        // Public registration (no requestor) delegates to the main implementation.
+        return register(fname, lname, email, rawPassword, role, null);
+    }
+
+    @Transactional
+    public User register(String fname, String lname, String email, String rawPassword, User.UserRole role, Integer requestorID) {
+        // If creating a staff account, ensure that the caller is staff.
+        if (role == User.UserRole.STAFF) {
+            if (requestorID == null) {
+                throw new IllegalArgumentException("Only staff may create staff accounts.");
+            }
+            // validateStaffAccess will throw AuthenticationFailedException or AuthorizationFailedException if invalid.
+            authUtils.validateStaffAccess(requestorID);
+        }
+
         // Emails must be unique!
         if (userDao.findByEmail(email) != null) {
             throw new UserAlreadyExistsException("Registration failed: email is already registered.");
@@ -129,13 +144,97 @@ public class UserService {
     // 9. View all MEMBERS (STAFF-only function).
     public List<User> getAllMembers(int requestorID) {
 
-    // Verify staff authorization.
-    authUtils.validateStaffAccess(requestorID);
+        // Verify staff authorization.
+        authUtils.validateStaffAccess(requestorID);
     
-    // Get all users and filter for members (non-staff).
-    List<User> allUsers = userDao.findAll();
-    return allUsers.stream()
-            .filter(user -> !user.isStaff())
-            .collect(Collectors.toList());
+        // Get all users and filter for members (non-staff).
+        List<User> allUsers = userDao.findAll();
+        return allUsers.stream()
+                .filter(user -> !user.isStaff())
+                .collect(Collectors.toList());
+    }
+
+    // 10. Update user information (STAFF can update any, MEMBERS can update their own).
+    @Transactional
+    public User updateUser(int userID, String fname, String lname, String email, User.UserStatus status, int requestorID) {
+        // Verify authorization - staff can update any, members can only update their own
+        authUtils.validateUserDataAccess(requestorID, userID);
+
+        User user = userDao.findById(userID);
+        if (user == null) {
+            return null;
+        }
+
+        // Update fields
+        if (fname != null && !fname.isEmpty()) {
+            user.setFname(fname);
+        }
+        if (lname != null && !lname.isEmpty()) {
+            user.setLname(lname);
+        }
+        if (email != null && !email.isEmpty()) {
+            // Check if new email is already taken by another user
+            User existingUser = userDao.findByEmail(email);
+            if (existingUser != null && existingUser.getUserID() != userID) {
+                throw new UserAlreadyExistsException("Email is already in use by another user.");
+            }
+            user.setEmail(email);
+        }
+        
+        // Only staff can change status through this method
+        User requestor = authUtils.getRequestor(requestorID);
+        if (status != null && requestor.isStaff()) {
+            setStatus(userID, status);
+        }
+
+        userDao.update(user);
+        return user;
+    }
+
+    // 11. Update user status (STAFF only).
+    @Transactional
+    public User updateUserStatus(int userID, User.UserStatus newStatus, int requestorID) {
+        // Verify staff authorization
+        authUtils.validateStaffAccess(requestorID);
+
+        User user = userDao.findById(userID);
+        if (user == null) {
+            return null;
+        }
+
+        setStatus(userID, newStatus);
+        return userDao.findById(userID);
+    }
+
+    // 12. Activate user account (STAFF only).
+    @Transactional
+    public boolean activateUser(int userID, int requestorID) {
+        // Verify staff authorization
+        authUtils.validateStaffAccess(requestorID);
+
+        User user = userDao.findById(userID);
+        if (user == null) {
+            return false;
+        }
+
+        user.activate();
+        userDao.update(user);
+        return true;
+    }
+
+    // 13. Deactivate user account (STAFF only).
+    @Transactional
+    public boolean deactivateUser(int userID, int requestorID) {
+        // Verify staff authorization
+        authUtils.validateStaffAccess(requestorID);
+
+        User user = userDao.findById(userID);
+        if (user == null) {
+            return false;
+        }
+
+        user.deactivate();
+        userDao.update(user);
+        return true;
     }
 }
