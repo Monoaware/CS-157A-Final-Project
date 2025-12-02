@@ -1,187 +1,128 @@
 package edu.sjsu.library.controllers;
 
-import edu.sjsu.library.dao.CopyDAO;
-import edu.sjsu.library.models.Copy;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 
+import edu.sjsu.library.models.Copy;
+import edu.sjsu.library.services.CopyService;
+import edu.sjsu.library.utils.AuthorizationUtils;
+
 @Controller
+@RequestMapping("/api/copies")
 public class CopyController {
 
-    private final CopyDAO copyDAO;
+    private final CopyService copyService;
+    private final AuthorizationUtils authUtils;
 
-    public CopyController(CopyDAO copyDAO) {
-        this.copyDAO = copyDAO;
+    public CopyController(CopyService copyService, AuthorizationUtils authUtils) {
+        this.copyService = copyService;
+        this.authUtils = authUtils;
     }
 
-    // -----------------------------------
-    // LIST ALL COPIES + FILTERING
-    // -----------------------------------
-    @GetMapping("/copies")
-    public String listCopies(
-            @RequestParam(required = false) Integer titleId,
-            @RequestParam(required = false) String barcode,
-            @RequestParam(required = false) Boolean visible,
-            Model model) {
-
-        List<Copy> copies;
-
-        if (titleId != null) {
-            copies = copyDAO.findByTitle(titleId);
-        }
-        else if (barcode != null && !barcode.isBlank()) {
-            Copy c = copyDAO.findByBarcode(barcode);
-            copies = (c == null) ? List.of() : List.of(c);
-        }
-        else if (visible != null) {
-            // filter in-memory because DB stores boolean already
-            copies = copyDAO.findAll().stream()
-                    .filter(c -> c.isVisible() == visible)
-                    .toList();
-        }
-        else {
-            copies = copyDAO.findAll();
-        }
-
-        model.addAttribute("copies", copies);
-        return "copies";
+    @GetMapping
+    @ResponseBody
+    public ResponseEntity<List<Copy>> getAllCopies(HttpServletRequest request) {
+        int requestorID = getRequestorId(request);
+        List<Copy> copies = copyService.getAllCopies(requestorID);
+        return ResponseEntity.ok(copies);
     }
 
-    // -----------------------------------
-    // VIEW A SINGLE COPY
-    // -----------------------------------
-    @GetMapping("/copies/{copyId}")
-    public String viewCopy(@PathVariable int copyId, Model model) {
-        Copy copy = copyDAO.findById(copyId);
-
-        if (copy == null) {
-            model.addAttribute("error", "Copy not found with ID: " + copyId);
-            return "error";
-        }
-
-        model.addAttribute("copy", copy);
-        return "copies/view-copy";
+    @GetMapping("/{copyID}")
+    @ResponseBody
+    public ResponseEntity<Copy> getCopyById(
+            @PathVariable int copyID,
+            HttpServletRequest request) {
+        int requestorID = getRequestorId(request);
+        Copy copy = copyService.getCopyById(copyID, requestorID);
+        return copy != null ? ResponseEntity.ok(copy) : ResponseEntity.notFound().build();
     }
 
-    // -----------------------------------
-    // SHOW ADD FORM
-    // -----------------------------------
-    @GetMapping("/copies/add")
-    public String showAddForm(Model model) {
-        return "copies/add-copy";
+    @GetMapping("/title/{titleID}")
+    @ResponseBody
+    public ResponseEntity<List<Copy>> getCopiesForTitle(
+            @PathVariable int titleID,
+            HttpServletRequest request) {
+        int requestorID = getRequestorId(request);
+        List<Copy> copies = copyService.getCopiesForTitle(titleID, requestorID);
+        return ResponseEntity.ok(copies);
     }
 
-    // -----------------------------------
-    // HANDLE ADD
-    // -----------------------------------
-    @PostMapping("/copies/add")
-    public String addCopy(
-            @RequestParam int titleID,
-            @RequestParam String barcode,
-            @RequestParam String status,
-            @RequestParam(required = false) String location,
-            @RequestParam(defaultValue = "true") boolean isVisible,
-            Model model) {
-
-        try {
-            Copy newCopy = new Copy(
-                    0,
-                    titleID,
-                    barcode,
-                    Copy.CopyStatus.valueOf(status.toUpperCase().trim()),
-                    location,
-                    isVisible
-            );
-
-            int newId = copyDAO.insert(newCopy);
-
-            model.addAttribute("message", "Copy added successfully!");
-            model.addAttribute("copyId", newId);
-            return "copies/add-copy-success";
-
-        } catch (Exception e) {
-            model.addAttribute("error", "Error adding copy: " + e.getMessage());
-            return "copies/add-copy";
-        }
+    @PostMapping
+    @ResponseBody
+    public ResponseEntity<Copy> addCopy(
+            @RequestBody Copy newCopy,
+            HttpServletRequest request) {
+        int requestorID = getRequestorId(request);
+        Copy created = copyService.addCopy(newCopy, requestorID);
+        return ResponseEntity.status(201).body(created);
     }
 
-    // -----------------------------------
-    // SHOW EDIT FORM
-    // -----------------------------------
-    @GetMapping("/copies/{copyId}/edit")
-    public String showEditForm(@PathVariable int copyId, Model model) {
-        Copy copy = copyDAO.findById(copyId);
-
-        if (copy == null) {
-            model.addAttribute("error", "Copy not found with ID: " + copyId);
-            return "error";
-        }
-
-        model.addAttribute("copy", copy);
-        return "copies/edit-copy";
+    @PutMapping("/{copyID}")
+    @ResponseBody
+    public ResponseEntity<Copy> updateCopy(
+            @PathVariable int copyID,
+            @RequestBody Copy updatedCopy,
+            HttpServletRequest request) {
+        int requestorID = getRequestorId(request);
+        updatedCopy.setCopyID(copyID);
+        Copy copy = copyService.updateCopy(updatedCopy, requestorID);
+        return ResponseEntity.ok(copy);
     }
 
-    // -----------------------------------
-    // HANDLE EDIT
-    // -----------------------------------
-    @PostMapping("/copies/{copyId}/edit")
-    public String editCopy(
-            @PathVariable int copyId,
-            @RequestParam int titleID,
-            @RequestParam String barcode,
-            @RequestParam String status,
-            @RequestParam(required = false) String location,
-            @RequestParam(defaultValue = "true") boolean isVisible,
-            Model model) {
-
-        try {
-            Copy existing = copyDAO.findById(copyId);
-
-            if (existing == null) {
-                model.addAttribute("error", "Copy not found with ID: " + copyId);
-                return "error";
-            }
-
-            existing.setTitleID(titleID);
-            existing.setBarcode(barcode);
-            existing.setStatus(Copy.CopyStatus.valueOf(status.toUpperCase().trim()));
-            existing.setLocation(location);
-            existing.setVisible(isVisible);
-
-            copyDAO.update(existing);
-
-            model.addAttribute("message", "Copy updated successfully!");
-            model.addAttribute("copy", existing);
-            return "copies/edit-copy-success";
-
-        } catch (Exception e) {
-            model.addAttribute("error", "Error updating copy: " + e.getMessage());
-            return "copies/edit-copy";
-        }
+    @DeleteMapping("/{copyID}")
+    @ResponseBody
+    public ResponseEntity<Void> deleteCopy(
+            @PathVariable int copyID,
+            HttpServletRequest request) {
+        int requestorID = getRequestorId(request);
+        boolean success = copyService.deleteCopy(copyID, requestorID);
+        return success ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
     }
 
-    // -----------------------------------
-    // DELETE A COPY
-    // -----------------------------------
-    @PostMapping("/copies/{copyId}/delete")
-    public String deleteCopy(@PathVariable int copyId, Model model) {
-        try {
-            int deleted = copyDAO.delete(copyId);
+    @GetMapping("/{copyID}/available")
+    @ResponseBody
+    public ResponseEntity<Boolean> isCopyAvailable(
+            @PathVariable int copyID,
+            HttpServletRequest request) {
+        int requestorID = getRequestorId(request);
+        boolean available = copyService.isCopyAvailable(copyID, requestorID);
+        return ResponseEntity.ok(available);
+    }
 
-            if (deleted == 0) {
-                model.addAttribute("error", "Unable to delete copy: ID not found.");
-                return "error";
-            }
+    @PostMapping("/{copyID}/status")
+    @ResponseBody
+    public ResponseEntity<Copy> changeCopyStatus(
+            @PathVariable int copyID,
+            @RequestParam Copy.CopyStatus status,
+            HttpServletRequest request) {
+        int requestorID = getRequestorId(request);
+        Copy updated = copyService.changeCopyStatus(copyID, status, requestorID);
+        return ResponseEntity.ok(updated);
+    }
+    @PostMapping("/{copyID}/visibility")
+    @ResponseBody
+    public ResponseEntity<Copy> setCopyVisibility(
+            @PathVariable int copyID,
+            @RequestParam boolean visible,
+            HttpServletRequest request) {
+        int requestorID = getRequestorId(request);
+        Copy updated = copyService.setCopyVisibility(copyID, visible, requestorID);
+        return ResponseEntity.ok(updated);
+    }
 
-            model.addAttribute("message", "Copy deleted successfully!");
-            return "copies/delete-copy-success";
+    private int getRequestorId(HttpServletRequest req) {
+        jakarta.servlet.http.HttpSession session = req.getSession(false);
+        if (session == null)
+            throw new RuntimeException("Unauthenticated - no session.");
 
-        } catch (Exception e) {
-            model.addAttribute("error", "Error deleting copy: " + e.getMessage());
-            return "error";
-        }
+        Integer id = (Integer) session.getAttribute("USER_ID");
+        if (id == null)
+            throw new RuntimeException("Unauthenticated - USER_ID missing from session.");
+
+        return id;
     }
 }

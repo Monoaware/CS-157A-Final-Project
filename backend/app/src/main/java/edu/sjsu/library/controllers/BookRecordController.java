@@ -1,190 +1,122 @@
 package edu.sjsu.library.controllers;
 
-import edu.sjsu.library.dao.BookRecordDAO;
-import edu.sjsu.library.models.BookRecord;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import jakarta.servlet.http.HttpServletRequest;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
+import edu.sjsu.library.models.BookRecord;
+import edu.sjsu.library.services.LoanService;
+
 @Controller
+@RequestMapping("/api/loans")
 public class BookRecordController {
 
-    private final BookRecordDAO bookRecordDAO;
+    private final LoanService loanService;
 
-    public BookRecordController(BookRecordDAO bookRecordDAO) {
-        this.bookRecordDAO = bookRecordDAO;
+    public BookRecordController(LoanService loanService) {
+        this.loanService = loanService;
     }
 
-    // LIST ALL / FILTERED LOANS
-    @GetMapping("/records")
-    public String listRecords(
-            @RequestParam(required = false) Integer user,
-            @RequestParam(required = false) Integer copy,
-            @RequestParam(required = false) Integer title,
-            @RequestParam(required = false) Boolean active,
-            @RequestParam(required = false) Boolean overdue,
-            Model model) {
+    @PostMapping("/checkout")
+    @ResponseBody
+    public ResponseEntity<BookRecord> checkoutBook(
+            @RequestParam String barcode,
+            HttpServletRequest request) {
 
-        List<BookRecord> records;
-
-        // Filtering priority
-        if (user != null) {
-            records = (active != null && active)
-                    ? bookRecordDAO.findActiveByUser(user)
-                    : bookRecordDAO.findByUser(user);
-        }
-        else if (copy != null) {
-            records = bookRecordDAO.findByCopy(copy);
-        }
-        else if (title != null) {
-            records = bookRecordDAO.findByTitle(title);
-        }
-        else if (overdue != null && overdue) {
-            records = bookRecordDAO.findOverdue(LocalDateTime.now());
-        }
-        else {
-            records = bookRecordDAO.findAll();
-        }
-
-        model.addAttribute("records", records);
-        return "records";
+        int requestorID = getRequestorId(request);
+        BookRecord loan = loanService.checkoutBook(barcode, requestorID);
+        return ResponseEntity.status(201).body(loan);
     }
 
-    // VIEW SINGLE RECORD
-    @GetMapping("/records/{loanId}")
-    public String viewRecord(@PathVariable int loanId, Model model) {
-        try {
-            BookRecord record = bookRecordDAO.findById(loanId);
-            if (record == null) {
-                model.addAttribute("error", "Book record not found with Loan ID: " + loanId);
-                return "error";
-            }
+    @PostMapping("/renew/{loanID}")
+    @ResponseBody
+    public ResponseEntity<BookRecord> renewLoan(
+            @PathVariable int loanID,
+            HttpServletRequest request) {
 
-            model.addAttribute("record", record);
-            return "records/view-record";
-
-        } catch (Exception e) {
-            model.addAttribute("error", e.getMessage());
-            return "error";
-        }
+        int requestorID = getRequestorId(request);
+        BookRecord renewed = loanService.renewLoan(loanID, requestorID);
+        return ResponseEntity.ok(renewed);
     }
 
+    @PostMapping("/return/{loanID}")
+    @ResponseBody
+    public ResponseEntity<BookRecord> returnBook(
+            @PathVariable int loanID,
+            HttpServletRequest request) {
 
-    // SHOW ADD FORM
-    @GetMapping("/records/add")
-    public String showAddForm(Model model) {
-        return "records/add-record";
+        int requestorID = getRequestorId(request);
+        BookRecord returned = loanService.returnBook(loanID, requestorID);
+        return ResponseEntity.ok(returned);
     }
 
+    @GetMapping("/user/{userID}")
+    @ResponseBody
+    public ResponseEntity<List<BookRecord>> getLoanHistoryByUser(
+            @PathVariable int userID,
+            HttpServletRequest request) {
 
-    // HANDLE ADD
-    @PostMapping("/records/add")
-    public String addRecord(
-            @RequestParam int copyID,
-            @RequestParam int userID,
-            @RequestParam String checkoutDate,
-            @RequestParam String dueDate,
-            Model model) {
-
-        try {
-            BookRecord newRec = new BookRecord(
-                    0,
-                    copyID,
-                    userID,
-                    LocalDateTime.parse(checkoutDate),
-                    LocalDateTime.parse(dueDate),
-                    null,
-                    0 // renewCount
-            );
-
-            int newId = bookRecordDAO.insert(newRec);
-
-            model.addAttribute("message", "Book record created successfully!");
-            model.addAttribute("loanId", newId);
-
-            return "records/add-record-success";
-
-        } catch (Exception e) {
-            model.addAttribute("error", e.getMessage());
-            return "records/add-record";
-        }
+        int requestorID = getRequestorId(request);
+        List<BookRecord> loans = loanService.getLoanHistoryByUser(requestorID, userID);
+        return ResponseEntity.ok(loans);
     }
 
+    @GetMapping("/user/{userID}/current")
+    @ResponseBody
+    public ResponseEntity<List<BookRecord>> getCurrentLoansByUser(
+            @PathVariable int userID,
+            HttpServletRequest request) {
 
-    // SHOW EDIT FORM
-    @GetMapping("/records/{loanId}/edit")
-    public String showEditForm(@PathVariable int loanId, Model model) {
-        BookRecord record = bookRecordDAO.findById(loanId);
-
-        if (record == null) {
-            model.addAttribute("error", "Book record not found with Loan ID: " + loanId);
-            return "error";
-        }
-
-        model.addAttribute("record", record);
-        return "records/edit-record";
+        int requestorID = getRequestorId(request);
+        List<BookRecord> loans = loanService.getCurrentLoansByUser(requestorID, userID);
+        return ResponseEntity.ok(loans);
     }
 
-    // HANDLE EDIT
-    @PostMapping("/records/{loanId}/edit")
-    public String editRecord(
-            @PathVariable int loanId,
-            @RequestParam int copyID,
-            @RequestParam int userID,
-            @RequestParam String checkoutDate,
-            @RequestParam String dueDate,
-            @RequestParam(required = false) String returnDate,
-            @RequestParam int renewCount,
-            Model model) {
+    @GetMapping("/title/{titleID}")
+    @ResponseBody
+    public ResponseEntity<List<BookRecord>> getLoanHistoryByTitle(
+            @PathVariable int titleID,
+            HttpServletRequest request) {
 
-        try {
-            BookRecord existing = bookRecordDAO.findById(loanId);
-            if (existing == null) {
-                model.addAttribute("error", "Book record not found with Loan ID: " + loanId);
-                return "error";
-            }
-
-            existing.setCopyID(copyID);
-            existing.setUserID(userID);
-            existing.setCheckoutDate(LocalDateTime.parse(checkoutDate));
-            existing.setDueDate(LocalDateTime.parse(dueDate));
-            existing.setReturnDate(returnDate == null || returnDate.isEmpty()
-                    ? null
-                    : LocalDateTime.parse(returnDate));
-            existing.setRenewCount(renewCount);
-
-            bookRecordDAO.update(existing);
-
-            model.addAttribute("message", "Book record updated successfully!");
-            model.addAttribute("record", existing);
-            return "records/edit-record-success";
-
-        } catch (Exception e) {
-            model.addAttribute("error", e.getMessage());
-            return "records/edit-record";
-        }
+        int requestorID = getRequestorId(request);
+        List<BookRecord> loans = loanService.getLoanHistoryByTitle(requestorID, titleID);
+        return ResponseEntity.ok(loans);
     }
 
-    // DELETE RECORD
-    @PostMapping("/records/{loanId}/delete")
-    public String deleteRecord(@PathVariable int loanId, Model model) {
-        try {
-            int rows = bookRecordDAO.delete(loanId);
+    @GetMapping("/copy/{copyID}")
+    @ResponseBody
+    public ResponseEntity<List<BookRecord>> getLoanHistoryByCopy(
+            @PathVariable int copyID,
+            HttpServletRequest request) {
 
-            if (rows == 0) {
-                model.addAttribute("error", "Unable to delete — record not found.");
-                return "error";
-            }
+        int requestorID = getRequestorId(request);
+        List<BookRecord> loans = loanService.getLoanHistoryByCopy(requestorID, copyID);
+        return ResponseEntity.ok(loans);
+    }
 
-            model.addAttribute("message", "Record deleted successfully!");
-            return "records/delete-record-success";
+    @GetMapping("/copy/{copyID}/current")
+    @ResponseBody
+    public ResponseEntity<BookRecord> getCurrentLoanByCopy(
+            @PathVariable int copyID,
+            HttpServletRequest request) {
 
-        } catch (Exception e) {
-            model.addAttribute("error", e.getMessage());
-            return "error";
-        }
+        int requestorID = getRequestorId(request);
+        BookRecord loan = loanService.getCurrentLoanByCopy(requestorID, copyID);
+        return loan != null ? ResponseEntity.ok(loan) : ResponseEntity.notFound().build();
+    }
+
+    private int getRequestorId(HttpServletRequest req) {
+        jakarta.servlet.http.HttpSession session = req.getSession(false);
+        if (session == null)
+            throw new RuntimeException("Unauthenticated - no session.");
+
+        Integer id = (Integer) session.getAttribute("USER_ID");
+        if (id == null)
+            throw new RuntimeException("Unauthenticated - USER_ID missing from session.");
+
+        return id;
     }
 }

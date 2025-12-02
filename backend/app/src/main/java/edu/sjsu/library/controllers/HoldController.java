@@ -1,190 +1,146 @@
 package edu.sjsu.library.controllers;
 
-import edu.sjsu.library.dao.HoldDAO;
-import edu.sjsu.library.models.Hold;
-import edu.sjsu.library.models.Hold.HoldStatus;
-
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import jakarta.servlet.http.HttpServletRequest;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import edu.sjsu.library.models.Hold;
+import edu.sjsu.library.services.HoldService;
+import edu.sjsu.library.utils.AuthorizationUtils;
 
 @Controller
+@RequestMapping("/api/holds")
 public class HoldController {
 
-    private final HoldDAO holdDAO;
+    private final HoldService holdService;
+    private final AuthorizationUtils authUtils;
 
-    public HoldController(HoldDAO holdDAO) {
-        this.holdDAO = holdDAO;
+    public HoldController(HoldService holdService, AuthorizationUtils authUtils) {
+        this.holdService = holdService;
+        this.authUtils = authUtils;
     }
 
-    // LIST HOLDS WITH OPTIONAL FILTERS
-    @GetMapping("/holds")
-    public String listHolds(
-            @RequestParam(required = false) Integer userId,
-            @RequestParam(required = false) Integer titleId,
-            @RequestParam(required = false) String status,
-            Model model) {
+    @PostMapping("/{titleID}")
+    @ResponseBody
+    public ResponseEntity<Hold> placeHold(
+            @PathVariable int titleID,
+            HttpServletRequest request) {
 
-        List<Hold> holds = holdDAO.findAll();
+        int requestorID = getRequestorId(request);
 
-        // Filter by user
-        if (userId != null) {
-            holds = holds.stream()
-                    .filter(h -> h.getUserID() == userId)
-                    .collect(Collectors.toList());
-        }
-
-        // Filter by title
-        if (titleId != null) {
-            holds = holds.stream()
-                    .filter(h -> h.getTitleID() == titleId)
-                    .collect(Collectors.toList());
-        }
-
-        // Filter by status
-        if (status != null && !status.isEmpty()) {
-            String st = status.toUpperCase();
-            holds = holds.stream()
-                    .filter(h -> h.getStatus().name().equals(st))
-                    .collect(Collectors.toList());
-        }
-
-        model.addAttribute("holds", holds);
-        model.addAttribute("statuses", HoldStatus.values());
-
-        return "holds/holds-list";
+        Hold created = holdService.placeHold(titleID, requestorID);
+        return ResponseEntity.status(201).body(created);
     }
 
-    // VIEW ONE HOLD
-    @GetMapping("/holds/{id}")
-    public String viewHold(@PathVariable int id, Model model) {
-        Hold h = holdDAO.findById(id);
+    @DeleteMapping("/{holdID}")
+    @ResponseBody
+    public ResponseEntity<Void> cancelHold(
+            @PathVariable int holdID,
+            HttpServletRequest request) {
 
-        if (h == null) {
-            model.addAttribute("error", "Hold not found with ID: " + id);
-            return "error";
-        }
+        int requestorID = getRequestorId(request);
 
-        model.addAttribute("hold", h);
-        return "holds/view-hold";
+        boolean success = holdService.cancelHold(holdID, requestorID);
+        return success ? ResponseEntity.noContent().build()
+                       : ResponseEntity.notFound().build();
     }
 
-    // SHOW ADD FORM
-    @GetMapping("/holds/add")
-    public String showAddForm(Model model) {
-        model.addAttribute("statuses", HoldStatus.values());
-        return "holds/add-hold";
+    @PostMapping("/process/{titleID}/{copyID}")
+    @ResponseBody
+    public ResponseEntity<Hold> processNextHold(
+            @PathVariable int titleID,
+            @PathVariable int copyID,
+            HttpServletRequest request) {
+
+        int requestorID = getRequestorId(request);
+
+        Hold updated = holdService.processNextHold(titleID, copyID, requestorID);
+        return ResponseEntity.ok(updated);
     }
 
-     // ADD HOLD
-    @PostMapping("/holds/add")
-    public String addHold(
-            @RequestParam int userId,
-            @RequestParam int titleId,
-            @RequestParam int copyId,
-            @RequestParam String status,
-            Model model) {
-        try {
-            HoldStatus holdStatus = HoldStatus.valueOf(status.toUpperCase());
 
-            int nextPos = holdDAO.getNextPosition(titleId);
+    @PostMapping("/pickup/{holdID}")
+    @ResponseBody
+    public ResponseEntity<Void> completeHoldPickup(
+            @PathVariable int holdID,
+            HttpServletRequest request) {
 
-            Hold newHold = new Hold(
-                    0,
-                    userId,
-                    titleId,
-                    copyId,
-                    holdStatus,
-                    LocalDateTime.now(),
-                    null,
-                    null,
-                    nextPos
-            );
+        int requestorID = getRequestorId(request);
 
-            int id = holdDAO.insert(newHold);
-            model.addAttribute("message", "Hold created successfully!");
-            model.addAttribute("holdId", id);
-
-            return "holds/add-hold-success";
-
-        } catch (Exception e) {
-            model.addAttribute("error", e.getMessage());
-            model.addAttribute("statuses", HoldStatus.values());
-            return "holds/add-hold";
-        }
+        boolean success = holdService.completeHoldPickup(holdID, requestorID);
+        return success ? ResponseEntity.noContent().build()
+                       : ResponseEntity.notFound().build();
     }
 
-    // SHOW EDIT FORM
-    @GetMapping("/holds/{id}/edit")
-    public String editHoldForm(@PathVariable int id, Model model) {
-        Hold h = holdDAO.findById(id);
-        if (h == null) {
-            model.addAttribute("error", "Hold not found with ID: " + id);
-            return "error";
-        }
-
-        model.addAttribute("hold", h);
-        model.addAttribute("statuses", HoldStatus.values());
-        return "holds/edit-hold";
+    @PostMapping("/expired")
+    @ResponseBody
+    public ResponseEntity<List<Hold>> processExpiredHolds(HttpServletRequest request) {
+        int requestorID = getRequestorId(request);
+        List<Hold> expired = holdService.processExpiredHolds(requestorID);
+        return ResponseEntity.ok(expired);
     }
 
-    // UPDATE HOLD
-    @PostMapping("/holds/{id}/edit")
-    public String updateHold(
-            @PathVariable int id,
-            @RequestParam int userId,
-            @RequestParam int titleId,
-            @RequestParam int copyId,
-            @RequestParam String status,
-            @RequestParam int position,
-            Model model) {
+    @GetMapping("/user/{userID}")
+    @ResponseBody
+    public ResponseEntity<List<Hold>> getUserHolds(
+            @PathVariable int userID,
+            HttpServletRequest request) {
 
-        try {
-            Hold existing = holdDAO.findById(id);
-            if (existing == null) {
-                model.addAttribute("error", "Hold not found with ID: " + id);
-                return "error";
-            }
+        int requestorID = getRequestorId(request);
 
-            HoldStatus holdStatus = HoldStatus.valueOf(status.toUpperCase());
-
-            // Preserve placedAt, readyAt, pickupExpire unless changed manually later
-            existing.setUserID(userId);
-            existing.setTitleID(titleId);
-            existing.setCopyID(copyId);
-            existing.setStatus(holdStatus);
-            existing.setPosition(position);
-
-            holdDAO.update(existing);
-
-            model.addAttribute("message", "Hold updated successfully!");
-            model.addAttribute("hold", existing);
-            return "holds/edit-hold-success";
-
-        } catch (Exception e) {
-            model.addAttribute("error", e.getMessage());
-            return "error";
-        }
+        List<Hold> holds = holdService.getUserHolds(userID, requestorID);
+        return ResponseEntity.ok(holds);
     }
 
-    // DELETE HOLD
-    @PostMapping("/holds/{id}/delete")
-    public String deleteHold(@PathVariable int id, Model model) {
-        try {
-            int rows = holdDAO.delete(id);
-            if (rows == 0) {
-                model.addAttribute("error", "Hold not found or already deleted.");
-                return "error";
-            }
-            return "redirect:/holds";
+    @GetMapping("/title/{titleID}")
+    @ResponseBody
+    public ResponseEntity<List<Hold>> getHoldsForTitle(
+            @PathVariable int titleID,
+            HttpServletRequest request) {
 
-        } catch (Exception e) {
-            model.addAttribute("error", e.getMessage());
-            return "error";
-        }
+        int requestorID = getRequestorId(request);
+
+        List<Hold> holds = holdService.getHoldsForTitle(titleID, requestorID);
+        return ResponseEntity.ok(holds);
+    }
+
+    @GetMapping("/{holdID}/position")
+    @ResponseBody
+    public ResponseEntity<Integer> getHoldPosition(
+            @PathVariable int holdID,
+            HttpServletRequest request) {
+
+        int requestorID = getRequestorId(request);
+
+        int pos = holdService.getHoldPosition(holdID, requestorID);
+        return ResponseEntity.ok(pos);
+    }
+
+    @GetMapping("/canPlace")
+    @ResponseBody
+    public ResponseEntity<Boolean> canPlaceHold(
+            @RequestParam int titleID,
+            @RequestParam int userID,
+            HttpServletRequest request) {
+
+        int requestorID = getRequestorId(request);
+
+        boolean can = holdService.canPlaceHold(titleID, userID, requestorID);
+        return ResponseEntity.ok(can);
+    }
+
+    private int getRequestorId(HttpServletRequest req) {
+        jakarta.servlet.http.HttpSession session = req.getSession(false);
+        if (session == null)
+            throw new RuntimeException("Unauthenticated - no session.");
+        
+        Integer id = (Integer) session.getAttribute("USER_ID");
+        if (id == null)
+            throw new RuntimeException("Unauthenticated - USER_ID missing from session.");
+        
+        return id;
     }
 }

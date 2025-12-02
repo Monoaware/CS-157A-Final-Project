@@ -49,6 +49,7 @@ public class Copy {
     public void setVisible(boolean visible) { isVisible = visible; }
     public void setTitleID(int titleID) { this.titleID = titleID; }
     public void setStatus(CopyStatus status) { this.status = status; }
+    public void setCopyID(int copyID) { this.copyID = copyID; }
 
     // Public methods:
     public boolean isAvailable() { return this.status == CopyStatus.AVAILABLE; }
