@@ -61,7 +61,13 @@ public class Hold {
 
     // Setters: 
     public void setPosition(int position) { this.position = position; }
-    public void setCopyID (int copyID) { this.copyID = copyID; }
+    public void setCopyID(int copyID) { this.copyID = copyID; }
+    public void setUserID(int userID) { this.userID = userID; }
+    public void setTitleID(int titleID) { this.titleID = titleID; }
+    public void setStatus(HoldStatus status) { this.status = status; }
+    public void setPlacedAt(LocalDateTime placedAt) { this.placedAt = placedAt; }
+    public void setReadyAt(LocalDateTime readyAt) { this.readyAt = readyAt; }
+    public void setPickupExpire(LocalDateTime pickupExpire) { this.pickupExpire = pickupExpire; }
 
     // Helper methods:
     private void assertCanMarkReady() {

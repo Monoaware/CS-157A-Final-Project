@@ -47,6 +47,8 @@ public class Copy {
     public void setBarcode(String barcode) { this.barcode = barcode; }
     public void setLocation(String location) { this.location = location; }
     public void setVisible(boolean visible) { isVisible = visible; }
+    public void setTitleID(int titleID) { this.titleID = titleID; }
+    public void setStatus(CopyStatus status) { this.status = status; }
 
     // Public methods:
     public boolean isAvailable() { return this.status == CopyStatus.AVAILABLE; }

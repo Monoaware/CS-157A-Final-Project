@@ -50,6 +50,14 @@ public class BookRecord {
     public static int getLoanPeriodDays() { 
         return LOAN_PERIOD_DAYS; 
     }
+    
+    // Setters:
+    public void setCopyID(int copyID) { this.copyID = copyID; }
+    public void setUserID(int userID) { this.userID = userID; }
+    public void setCheckoutDate(LocalDateTime checkoutDate) { this.checkoutDate = checkoutDate; }
+    public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
+    public void setReturnDate(LocalDateTime returnDate) { this.returnDate = returnDate; }
+    public void setRenewCount(int renewCount) { this.renewCount = renewCount; }
 
     // Helper methods:
     private void assertRenewable() {
