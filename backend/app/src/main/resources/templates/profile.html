@@ -126,7 +126,7 @@
         <input id="email" type="email" required>
 
         <label>Status</label>
-        <input id="status" type="text">
+        <input id="status" type="text" disabled style = "background: #eee;">
 
         <label>Role</label>
         <input id="role" type="text" disabled style="background: #eee;">
@@ -166,48 +166,50 @@
     }
 
     // Save updates
-    document.getElementById("profileForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
+   document.getElementById("profileForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-        const msg = document.getElementById("statusMessage");
-        msg.textContent = "";
-        msg.className = "status-box";
+    const msg = document.getElementById("statusMessage");
+    msg.textContent = "";
+    msg.className = "status-box";
 
-        if (currentUserId == null) {
-            msg.textContent = "Cannot update: user id is unknown.";
-            msg.className = "status-box status-error";
-            return;
-        }
+    if (currentUserId == null) {
+        msg.textContent = "Cannot update: user id is unknown.";
+        msg.className = "status-box status-error";
+        return;
+    }
 
-        const body = {
-            fname: document.getElementById("fname").value,
-            lname: document.getElementById("lname").value,
-            email: document.getElementById("email").value,
-            // status is required by UpdateUserRequest; for members backend can ignore it
-            status: document.getElementById("status").value
-        };
+    const newStatus = document.getElementById("status").value.trim().toUpperCase();
 
-        try {
-            const res = await fetch(`/api/users/${currentUserId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body)
-            });
+    const body = {
+        fname: document.getElementById("fname").value,
+        lname: document.getElementById("lname").value,
+        email: document.getElementById("email").value
+    };
 
-            if (res.ok) {
-                msg.textContent = "Profile updated successfully!";
-                msg.className = "status-box status-success";
-            } else {
-                console.error("Profile update failed, status:", res.status);
-                msg.textContent = "Failed to update profile.";
-                msg.className = "status-box status-error";
-            }
-        } catch (err) {
-            console.error("Error while updating profile:", err);
-            msg.textContent = "Network error while updating profile.";
+
+    try {
+        const res = await fetch(`/api/users/${currentUserId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+            msg.textContent = "Profile updated successfully!";
+            msg.className = "status-box status-success";
+        } else {
+            msg.textContent = "Failed to update profile.";
             msg.className = "status-box status-error";
         }
-    });
+
+    } catch (err) {
+        console.error("Error while updating profile:", err);
+        msg.textContent = "Network error while updating profile.";
+        msg.className = "status-box status-error";
+    }
+});
+
 
     loadProfile();
 </script>
