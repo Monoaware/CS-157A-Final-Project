@@ -30,8 +30,9 @@ public class Fine {
     }
 
     // Constructor for existing fines (loaded from database).
-    public Fine(int fineID, int loanID, BigDecimal amount, LocalDateTime fineDate, String reason, FineStatus status) {
+    public Fine(int fineID, int userID, int loanID, BigDecimal amount, LocalDateTime fineDate, String reason, FineStatus status) {
         this.fineID = fineID;
+        this.userID = userID;
         this.loanID = loanID;
         this.amount = amount;
         this.fineDate = fineDate;

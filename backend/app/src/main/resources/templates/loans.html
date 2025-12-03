@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>My Loans</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px 40px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border: 1px solid white;
+            padding: 6px 12px;
+            border-radius: 5px;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            background: #e74c3c;
+            color: white;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 900px;
+            margin-top: 30px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ecf0f1;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #ecf0f1;
+            font-weight: 600;
+        }
+
+        tbody tr:hover {
+            background: #f8f9f9;
+        }
+
+        .status-active {
+            color: #e67e22;
+            font-weight: 600;
+        }
+
+        .status-returned {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        .message {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .message.error {
+            color: #e74c3c;
+        }
+
+        .message.info {
+            color: #7f8c8d;
+        }
+
+        .btn-renew {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-renew:hover {
+            background: #2980b9;
+        }
+
+        .btn-renew[disabled] {
+            opacity: 0.5;
+            cursor: default;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>My Loans</h1>
+    <div class="header-right">
+        <a href="/dashboard" class="back-btn">← Back to Dashboard</a>
+        <a href="/fines" class="back-btn">View Fines</a> <!-- NEW BUTTON -->
+        <button class="logout-btn" id="logoutButton">Logout</button>
+    </div>
+</header>
+
+<main>
+    <!-- My loans -->
+    <div class="card">
+        <h2>My Loans</h2>
+        <p class="message info" id="myLoansMessage">Loading your loans...</p>
+        <table>
+            <thead>
+            <tr>
+                <th>Loan ID</th>
+                <th>Copy ID</th>
+                <th>Checkout Date</th>
+                <th>Due Date</th>
+                <th>Return Date</th>
+                <th>Renew Count</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="myLoansTableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- All loans (staff only) -->
+    <div class="card" id="allLoansCard" style="display:none;">
+        <h2>All Loans (Staff)</h2>
+        <p class="message info" id="allLoansMessage">Loading all loans...</p>
+        <table>
+            <thead>
+            <tr>
+                <th>Loan ID</th>
+                <th>User ID</th>
+                <th>Copy ID</th>
+                <th>Checkout Date</th>
+                <th>Due Date</th>
+                <th>Return Date</th>
+                <th>Renew Count</th>
+            </tr>
+            </thead>
+            <tbody id="allLoansTableBody"></tbody>
+        </table>
+    </div>
+</main>
+
+<script th:inline="javascript">
+    let CURRENT_USER_ID = null;
+    let CURRENT_USER_ROLE = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+        initLoansPage();
+    });
+
+    async function initLoansPage() {
+        try {
+            // Get current user info
+            const res = await fetch("/api/users/me");
+            if (!res.ok) {
+                window.location.href = "/";
+                return;
+            }
+
+            const user = await res.json();
+            CURRENT_USER_ID = user.userID;
+            CURRENT_USER_ROLE = user.role; // "STAFF" or "MEMBER"
+
+            // Attach logout handler
+            const logoutBtn = document.getElementById("logoutButton");
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", async () => {
+                    try {
+                        await fetch("/api/auth/logout", { method: "POST" });
+                    } catch (e) {}
+                    window.location.href = "/";
+                });
+            }
+
+            // Load MY loans
+            await loadMyLoans();
+
+            // Staff-only: show card and load all loans
+            if (CURRENT_USER_ROLE === "STAFF") {
+                const card = document.getElementById("allLoansCard");
+                card.style.display = "block";
+                await loadAllLoansForStaff();
+            }
+
+        } catch (err) {
+            console.error("Error initializing loans page:", err);
+            window.location.href = "/";
+        }
+    }
+
+    async function loadMyLoans() {
+        const messageEl = document.getElementById("myLoansMessage");
+        const tbody = document.getElementById("myLoansTableBody");
+        messageEl.textContent = "Loading your loans...";
+        messageEl.className = "message info";
+        tbody.innerHTML = "";
+
+        if (!CURRENT_USER_ID) {
+            messageEl.textContent = "Could not determine current user.";
+            messageEl.classList.add("error");
+            return;
+        }
+
+        try {
+            const resp = await fetch(`/api/loans/user/${CURRENT_USER_ID}`);
+            if (!resp.ok) {
+                messageEl.textContent = `Error loading loans (HTTP ${resp.status}).`;
+                messageEl.classList.add("error");
+                return;
+            }
+
+            const loans = await resp.json();
+            if (!loans || loans.length === 0) {
+                messageEl.textContent = "You have no loan history.";
+                messageEl.classList.remove("error");
+                messageEl.classList.add("info");
+                tbody.innerHTML = "";
+                return;
+            }
+
+            messageEl.textContent = "";
+            tbody.innerHTML = "";
+
+            for (const loan of loans) {
+                const tr = document.createElement("tr");
+
+                const checkoutDate = formatDateTime(loan.checkoutDate);
+                const dueDate = formatDateTime(loan.dueDate);
+                const returnDate = loan.returnDate ? formatDateTime(loan.returnDate) : "";
+                const isReturned = !!loan.returnDate;
+
+                const statusText = isReturned ? "Returned" : "Checked Out";
+                const statusClass = isReturned ? "status-returned" : "status-active";
+
+                const canRenew = !isReturned;
+                const renewButtonHtml = canRenew
+                    ? `<button class="btn-renew" data-loan-id="${loan.loanID}">Renew</button>`
+                    : "";
+
+                tr.innerHTML = `
+                    <td>${loan.loanID}</td>
+                    <td>${loan.copyID}</td>
+                    <td>${checkoutDate}</td>
+                    <td>${dueDate}</td>
+                    <td>${returnDate}</td>
+                    <td>${loan.renewCount}</td>
+                    <td class="${statusClass}">${statusText}</td>
+                    <td>${renewButtonHtml}</td>
+                `;
+
+                tbody.appendChild(tr);
+            }
+        } catch (err) {
+            console.error(err);
+            messageEl.textContent = "Unexpected error while loading loans.";
+            messageEl.classList.add("error");
+        }
+    }
+
+    // Renew button handler (delegated)
+    document.getElementById("myLoansTableBody").addEventListener("click", async (e) => {
+        const btn = e.target;
+        if (!btn.classList.contains("btn-renew")) return;
+
+        const loanId = btn.getAttribute("data-loan-id");
+        if (!loanId) return;
+
+        const messageEl = document.getElementById("myLoansMessage");
+        messageEl.textContent = "";
+        messageEl.className = "message info";
+
+        try {
+            const resp = await fetch(`/api/loans/renew/${loanId}`, {
+                method: "POST"
+            });
+
+            if (!resp.ok) {
+                messageEl.textContent = `Failed to renew loan (HTTP ${resp.status}).`;
+                messageEl.classList.add("error");
+                return;
+            }
+
+            messageEl.textContent = "Loan renewed successfully.";
+            messageEl.classList.remove("error");
+            messageEl.classList.add("info");
+
+            await loadMyLoans();
+        } catch (err) {
+            console.error(err);
+            messageEl.textContent = "Unexpected error while renewing loan.";
+            messageEl.classList.add("error");
+        }
+    });
+
+    // Staff-only: load ALL loans via GET /api/loans
+    async function loadAllLoansForStaff() {
+        const card = document.getElementById("allLoansCard");
+        const messageEl = document.getElementById("allLoansMessage");
+        const tbody = document.getElementById("allLoansTableBody");
+
+        if (!card) return;
+
+        messageEl.textContent = "Loading all loans...";
+        messageEl.className = "message info";
+        tbody.innerHTML = "";
+
+        try {
+            const resp = await fetch(`/api/loans`);
+            if (!resp.ok) {
+                messageEl.textContent = `Error loading all loans (HTTP ${resp.status}).`;
+                messageEl.classList.add("error");
+                return;
+            }
+
+            const loans = await resp.json();
+            if (!loans || loans.length === 0) {
+                messageEl.textContent = "There are no loans in the system.";
+                messageEl.classList.remove("error");
+                messageEl.classList.add("info");
+                return;
+            }
+
+            messageEl.textContent = "";
+            tbody.innerHTML = "";
+
+            for (const loan of loans) {
+                const tr = document.createElement("tr");
+
+                const checkoutDate = formatDateTime(loan.checkoutDate);
+                const dueDate = formatDateTime(loan.dueDate);
+                const returnDate = loan.returnDate ? formatDateTime(loan.returnDate) : "";
+
+                tr.innerHTML = `
+                    <td>${loan.loanID}</td>
+                    <td>${loan.userID}</td>
+                    <td>${loan.copyID}</td>
+                    <td>${checkoutDate}</td>
+                    <td>${dueDate}</td>
+                    <td>${returnDate}</td>
+                    <td>${loan.renewCount}</td>
+                `;
+
+                tbody.appendChild(tr);
+            }
+        } catch (err) {
+            console.error("Unexpected error while loading all loans:", err);
+            messageEl.textContent = "Unexpected error while loading all loans.";
+            messageEl.classList.add("error");
+        }
+    }
+
+    function formatDateTime(value) {
+        if (!value) return "";
+        try {
+            const d = new Date(value);
+            if (isNaN(d.getTime())) return value;
+            return d.toLocaleString();
+        } catch (e) {
+            return value;
+        }
+    }
+</script>
+
+</body>
+</html>

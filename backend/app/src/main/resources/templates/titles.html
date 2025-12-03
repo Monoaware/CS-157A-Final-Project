@@ -225,6 +225,11 @@
         <form th:action="@{/titles}" method="get" id="filterForm">
             <div class="form-row">
                 <div>
+                    <label for="title">Title</label>
+                    <input id="title" name="title" type="text"
+                           th:value="${param.title}" placeholder="e.g. The Great Gatsby">
+                </div>
+                <div>
                     <label for="author">Author</label>
                     <input id="author" name="author" type="text"
                            th:value="${param.author}" placeholder="e.g. J.K. Rowling">
@@ -298,9 +303,6 @@
                 <td th:text="${t.yearPublished}">2000</td>
                 <td th:text="${t.genre}">GENRE</td>
                 <td>
-                    <a th:href="@{/titles/{id}(id=${t.titleID})}"
-                       class="btn-secondary">View</a>
-
                     <!-- Staff-only actions -->
                     <a th:if="${isStaff}"
                        th:href="@{/titles/{id}/edit(id=${t.titleID})}"

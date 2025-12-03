@@ -35,6 +35,7 @@ public class FineDAO {
     private Fine mapRow(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
         return new Fine(
             rs.getInt("id"),
+            rs.getInt("userid"),
             rs.getInt("loanid"),
             rs.getBigDecimal("amount"),
             rs.getTimestamp("finedate").toLocalDateTime(),

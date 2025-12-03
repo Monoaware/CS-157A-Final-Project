@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Add New Title</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px 40px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-link {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border: 1px solid white;
+            padding: 6px 12px;
+            border-radius: 5px;
+        }
+
+        .btn-link:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            background: #e74c3c;
+            color: white;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 800px;
+            margin-top: 30px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px 30px;
+        }
+
+        .form-grid > div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        input, select {
+            padding: 8px 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #bdc3c7;
+            color: #2c3e50;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-secondary:hover {
+            background: #a7b0b5;
+        }
+
+        .message {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .message.error {
+            color: #e74c3c;
+        }
+
+        .message.success {
+            color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Add New Title</h1>
+    <div class="header-right">
+        <a href="/titles" class="btn-link">← Back to Catalog</a>
+        <button class="logout-btn" id="logoutButton">Logout</button>
+    </div>
+</header>
+
+<main>
+    <div class="card">
+        <h2>Title Information</h2>
+
+        <!-- Error / success messages -->
+        <div th:if="${error}" class="message error" th:text="${error}"></div>
+        <div th:if="${success}" class="message success" th:text="${success}"></div>
+
+        <form th:action="@{/titles/add}" method="post">
+            <div class="form-grid">
+                <div>
+                    <label for="isbn">ISBN</label>
+                    <input id="isbn" name="isbn" type="text" required
+                           placeholder="e.g. 9783161484100">
+                </div>
+
+                <div>
+                    <label for="yearPublished">Year Published</label>
+                    <input id="yearPublished" name="yearPublished" type="number"
+                           min="0" max="3000" required placeholder="e.g. 2005">
+                </div>
+
+                <div>
+                    <label for="title">Title</label>
+                    <input id="title" name="title" type="text" required
+                           placeholder="Book title">
+                </div>
+
+                <div>
+                    <label for="author">Author</label>
+                    <input id="author" name="author" type="text" required
+                           placeholder="Author name">
+                </div>
+
+                <div>
+                    <label for="genre">Genre</label>
+                    <select id="genre" name="genre" required>
+                        <option value="" disabled selected>Select genre</option>
+                        <option th:each="g : ${genres}"
+                                th:value="${g.name()}"
+                                th:text="${g.name()}">
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button type="submit" class="btn-primary">Add Title</button>
+                <a href="/titles" class="btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script>
+    document.getElementById("logoutButton").addEventListener("click", async () => {
+        try {
+            await fetch("/api/auth/logout", { method: "POST" });
+        } catch (e) {}
+        window.location.href = "/";
+    });
+</script>
+
+</body>
+</html>

@@ -173,7 +173,7 @@
             </div>
             <div>
                 <span class="label">ISBN: </span>
-                <span th:text="${title.isbn}">1234567890</span>
+                <span th:text="${title.ISBN}">1234567890</span>
             </div>
             <div>
                 <span class="label">Year Published: </span>
@@ -221,8 +221,8 @@
 
 <script th:inline="javascript">
     // Values from server
-    const titleId = "[[${title.titleID}]]";
-    const isStaff = "[[${isStaff}]]";
+    const titleId = /*[[${title.titleID}]]*/ 0;
+    const isStaff = /*[[${isStaff}]]*/ False;
 
     document.getElementById("logoutButton").addEventListener("click", async () => {
         try {
@@ -238,16 +238,30 @@
         msgBox.textContent = "";
         msgBox.className = "message";
 
+        const url = `/api/copies/title/${titleId}`;
+        console.log("Loading copies from:", url);
+
         try {
-            // Use CopyController:
-            const res = await fetch(`/api/copies/title/${titleId}`);
+            const res = await fetch(url, {
+                headers: { "Accept": "application/json" }
+            });
+
             if (!res.ok) {
-                msgBox.textContent = "Failed to load copies.";
+                msgBox.textContent = `Failed to load copies (status ${res.status}).`;
                 msgBox.classList.add("error");
+                console.error("Copies request failed:", res.status, res.statusText);
                 return;
             }
 
-            const copies = await res.json();
+            let copies;
+            try {
+                copies = await res.json();
+            } catch (jsonErr) {
+                console.error("JSON parse error for copies:", jsonErr);
+                msgBox.textContent = "Failed to parse copies data.";
+                msgBox.classList.add("error");
+                return;
+            }
 
             if (!Array.isArray(copies) || copies.length === 0) {
                 const tr = document.createElement("tr");
@@ -259,13 +273,12 @@
             copies.forEach(c => {
                 const tr = document.createElement("tr");
 
-                // Adjust field names here to match your Copy model
+                // Adjust these property names if your Copy model uses different getters
                 const status   = c.status || c.copyStatus || "";
                 const visible  = (c.visible === undefined || c.visible === null) ? "" : c.visible;
-                const barcode  = c.barcode ?? "";
-                const location = c.location ?? "";
+                const barcode  = c.barcode || "";
+                const location = c.location || "";
 
-                // "Available" heuristic: status enum name is AVAILABLE (tweak if yours differ)
                 const isAvailable = (status === "AVAILABLE");
 
                 tr.innerHTML = `
@@ -290,7 +303,7 @@
             });
 
         } catch (err) {
-            console.error(err);
+            console.error("Unexpected error in loadCopies:", err);
             msgBox.textContent = "Unexpected error while loading copies.";
             msgBox.classList.add("error");
         }
@@ -315,6 +328,7 @@
             if (!res.ok) {
                 msgBox.textContent = "Failed to check out copy (only members can checkout, or copy may not be available).";
                 msgBox.classList.add("error");
+                console.error("Checkout failed:", res.status, res.statusText);
                 return;
             }
 
@@ -325,7 +339,7 @@
             await loadCopies();
 
         } catch (err) {
-            console.error(err);
+            console.error("Error during checkout:", err);
             msgBox.textContent = "Network error while checking out copy.";
             msgBox.classList.add("error");
         }
@@ -333,6 +347,7 @@
 
     loadCopies();
 </script>
+
 
 </body>
 </html>

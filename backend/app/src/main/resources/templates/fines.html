@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Fines</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px 40px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-link {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border: 1px solid white;
+            padding: 6px 12px;
+            border-radius: 5px;
+        }
+
+        .btn-link:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            background: #e74c3c;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 30px;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin: 0 0 10px 0;
+        }
+
+        .card {
+            background: white;
+            padding: 20px 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .filters > div {
+            min-width: 200px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 4px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #bdc3c7;
+            color: #2c3e50;
+            padding: 6px 10px;
+            border-radius: 5px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-secondary:hover {
+            background: #a7b0b5;
+        }
+
+        .btn-action {
+            padding: 4px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-pay {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-pay:hover {
+            background: #1f8a4c;
+        }
+
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border-bottom: 1px solid #ecf0f1;
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #ecf0f1;
+            font-weight: 600;
+        }
+
+        tbody tr:hover {
+            background: #f8f9f9;
+        }
+
+        .status-unpaid { color: #e74c3c; font-weight: bold; }
+        .status-paid { color: #27ae60; font-weight: bold; }
+        .status-waived { color: #7f8c8d; font-weight: bold; }
+
+        .message {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .message.error { color: #e74c3c; }
+        .message.info { color: #7f8c8d; }
+        .message.success { color: #27ae60; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Fines</h1>
+    <div class="header-right">
+        <a href="/dashboard" class="btn-link">← Dashboard</a>
+        <a href="/loans" class="btn-link">My Loans</a>
+        <button id="logoutButton" class="logout-btn">Logout</button>
+    </div>
+</header>
+
+<main>
+
+    <!-- STAFF FILTERS -->
+    <div class="card" th:if="${isStaff}">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>Fine Filters (Staff)</h2>
+            <a href="/fines/create" class="btn-primary">Create Fine</a>
+        </div>
+
+        <form method="get" th:action="@{/fines}">
+            <div class="filters">
+
+                <!-- User filter -->
+                <div>
+                    <label for="userId">User</label>
+                    <select id="userId" name="userId">
+                        <option value="" th:selected="${selectedUserId == null}">All Users</option>
+                        <option th:each="u : ${users}"
+                                th:value="${u.userID}"
+                                th:text="${u.fname + ' ' + u.lname + ' (' + u.email + ')'}"
+                                th:selected="${selectedUserId == u.userID}">
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Status filter -->
+                <div>
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <option value="" th:selected="${selectedStatus == null}">Any</option>
+                        <option value="UNPAID" th:selected="${selectedStatus == 'UNPAID'}">Unpaid</option>
+                        <option value="PAID" th:selected="${selectedStatus == 'PAID'}">Paid</option>
+                        <option value="WAIVED" th:selected="${selectedStatus == 'WAIVED'}">Waived</option>
+                    </select>
+                </div>
+
+                <div>
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="/fines" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- MEMBER INFO -->
+    <div class="card" th:if="${!isStaff}">
+        <h2>Your Fines</h2>
+        <p class="message info">
+            Below are all fines associated with your account.
+        </p>
+    </div>
+
+    <!-- FINES TABLE -->
+    <div class="card">
+        <h2 th:text="${isStaff ? 'All Fines' : 'Fines'}"></h2>
+
+        <!-- Global inline message (for AJAX success/error) -->
+        <p id="globalMessage" class="message" style="display:none;"></p>
+
+        <div class="message info" th:if="${#lists.isEmpty(fines)}">
+            No fines found.
+        </div>
+
+        <table th:if="${!#lists.isEmpty(fines)}">
+            <thead>
+            <tr>
+                <th>Fine ID</th>
+                <th th:if="${isStaff}">User</th>
+                <th>Loan ID</th>
+                <th>Amount</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:each="f : ${fines}">
+                <!-- Fine ID -->
+                <td>
+                    <a
+                       th:text="${f.fineID}">
+                    </a>
+                </td>
+
+                <!-- STAFF-ONLY: User col -->
+                <td th:if="${isStaff}">
+                    <a 
+                       th:text="${f.userID}">
+                    </a>
+                </td>
+
+                <!-- Loan ID -->
+                <td th:text="${f.loanID}"></td>
+
+                <!-- Amount -->
+                <td th:text="${#numbers.formatDecimal(f.amount,1,'COMMA',2,'POINT')}"></td>
+
+                <!-- Reason -->
+                <td th:text="${f.reason}"></td>
+
+                <!-- Status -->
+                <td>
+                    <span th:switch="${f.status}">
+                        <span th:case="'UNPAID'" class="status-unpaid">Unpaid</span>
+                        <span th:case="'PAID'" class="status-paid">Paid</span>
+                        <span th:case="'WAIVED'" class="status-waived">Waived</span>
+                        <span th:case="*" th:text="${f.status}"></span>
+                    </span>
+                </td>
+
+                <!-- Actions -->
+                <td>
+                    <!-- DETAILS (everyone) -->
+                    <a th:href="@{/fines/{id}(id=${f.fineID})}"
+                       class="btn-secondary"
+                       style="margin-right:4px;">
+                        Details
+                    </a>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</main>
+
+<script>
+    // Logout behavior
+    document.getElementById("logoutButton").addEventListener("click", async () => {
+        try {
+            await fetch("/api/auth/logout", { method: "POST" });
+        } catch (e) {}
+        window.location.href = "/";
+    });
+
+    // Helper: show a transient message at the top of the fines card
+    function showGlobalMessage(text, type) {
+        const msg = document.getElementById("globalMessage");
+        msg.textContent = text;
+        msg.className = "message " + (type || "info");
+        msg.style.display = "block";
+        // Optional: hide after a few seconds
+        setTimeout(() => {
+            msg.style.display = "none";
+        }, 4000);
+    }
+
+
+</script>
+
+</body>
+</html>

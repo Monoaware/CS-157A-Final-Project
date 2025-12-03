@@ -152,7 +152,7 @@ public class TitleDAO {
             t.getTitle(),
             t.getAuthor(),
             t.getYearPublished(),
-            t.getGenre(),
+            t.getGenre().toString(),
             t.isVisible()
         );
         return newId;

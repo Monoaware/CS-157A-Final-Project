@@ -493,45 +493,63 @@
     });
 
     // Handle Edit User submit
-    document.getElementById("editUserForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
+document.getElementById("editUserForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-        const id = document.getElementById("editUserId").value;
-        const fname = document.getElementById("editFname").value;
-        const lname = document.getElementById("editLname").value;
-        const email = document.getElementById("editEmail").value;
-        const status = document.getElementById("editStatus").value;
+    const id = document.getElementById("editUserId").value;
+    const fname = document.getElementById("editFname").value;
+    const lname = document.getElementById("editLname").value;
+    const email = document.getElementById("editEmail").value;
+    const status = document.getElementById("editStatus").value.trim().toUpperCase();
 
-        const errBox = document.getElementById("editUserError");
-        const okBox = document.getElementById("editUserSuccess");
-        errBox.textContent = "";
-        okBox.textContent = "";
+    const errBox = document.getElementById("editUserError");
+    const okBox = document.getElementById("editUserSuccess");
+    errBox.textContent = "";
+    okBox.textContent = "";
 
-        try {
-            const res = await fetch(`/api/users/${id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    fname,
-                    lname,
-                    email,
-                    status  // must match User.UserStatus enum (e.g., "ACTIVE")
-                })
+    try {
+        let res;
+
+        if (status === "ACTIVE") {
+            res = await fetch(`/api/users/${id}/activate`, {
+                method: "POST"
             });
-
-            if (!res.ok) {
-                errBox.textContent = "Failed to update user.";
-                return;
-            }
-
-            okBox.textContent = "User updated successfully!";
-            await loadUsers();
-
-        } catch (err) {
-            console.error(err);
-            errBox.textContent = "Network or server error while updating user.";
+        } 
+        else if (status === "INACTIVE") {
+            res = await fetch(`/api/users/${id}/deactivate`, {
+                method: "POST"
+            });
         }
-    });
+        else if (status.length > 0) {
+            errBox.textContent = "Status must be ACTIVE or INACTIVE.";
+            return;
+        }
+
+
+        res = await fetch(`/api/users/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                fname,
+                lname,
+                email,
+            })
+        });
+
+        if (!res.ok) {
+            errBox.textContent = "Failed to update user.";
+            return;
+        }
+
+        okBox.textContent = "User updated successfully!";
+        await loadUsers();
+
+    } catch (err) {
+        console.error(err);
+        errBox.textContent = "Network or server error while updating user.";
+    }
+});
+
 
         // Handle Filter form submit
     document.getElementById("filterForm").addEventListener("submit", async (e) => {

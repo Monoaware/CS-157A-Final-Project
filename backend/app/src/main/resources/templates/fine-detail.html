@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Fine Details</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px 40px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-link {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border: 1px solid white;
+            padding: 6px 12px;
+            border-radius: 5px;
+        }
+
+        .btn-link:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            background: #e74c3c;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 800px;
+            margin-top: 30px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 30px;
+        }
+
+        .details-grid div span.label {
+            font-weight: 600;
+            display: inline-block;
+            min-width: 110px;
+        }
+
+        .status-unpaid { color: #e74c3c; font-weight: bold; }
+        .status-paid { color: #27ae60; font-weight: bold; }
+        .status-waived { color: #7f8c8d; font-weight: bold; }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #bdc3c7;
+            color: #2c3e50;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-secondary:hover {
+            background: #a7b0b5;
+        }
+
+        .btn-action {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-pay {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-pay:hover {
+            background: #1f8a4c;
+        }
+
+        .btn-waive {
+            background: #e67e22;
+            color: white;
+        }
+
+        .btn-waive:hover {
+            background: #d35400;
+        }
+
+        .message {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .message.error { color: #e74c3c; }
+        .message.info { color: #7f8c8d; }
+        .message.success { color: #27ae60; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Fine Details</h1>
+    <div class="header-right">
+        <a href="/fines" class="btn-link">← Back to Fines</a>
+        <a href="/dashboard" class="btn-link">Dashboard</a>
+        <button id="logoutButton" class="logout-btn">Logout</button>
+    </div>
+</header>
+
+<main>
+
+    <div class="card">
+        <h2>Fine #<span th:text="${fine.fineID}">0</span></h2>
+
+        <div class="details-grid">
+            <div>
+                <span class="label">User ID:</span>
+                <span th:text="${fine.userID}">0</span>
+            </div>
+            <div>
+                <span class="label">Loan ID:</span>
+                <span th:text="${fine.loanID}">0</span>
+            </div>
+            <div>
+                <span class="label">Amount:</span>
+                <span th:text="${#numbers.formatDecimal(fine.amount,1,'COMMA',2,'POINT')}">$0.00</span>
+            </div>
+            <div>
+                <span class="label">Status:</span>
+                <span th:switch="${fine.status}">
+                    <span th:case="'UNPAID'" class="status-unpaid">Unpaid</span>
+                    <span th:case="'PAID'" class="status-paid">Paid</span>
+                    <span th:case="'WAIVED'" class="status-waived">Waived</span>
+                    <span th:case="*" th:text="${fine.status}">UNKNOWN</span>
+                </span>
+            </div>
+            <div style="grid-column: 1 / span 2;">
+                <span class="label">Reason:</span>
+                <span th:text="${fine.reason}">Reason text</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions card -->
+    <div class="card">
+        <h2>Actions</h2>
+
+        <!-- Member: can pay own UNPAID fine -->
+        <div th:if="${!isStaff 
+                     and fine.status == T(edu.sjsu.library.models.Fine.FineStatus).UNPAID
+                     and fine.userID == currentUser.userID}">
+            <p class="message info">
+                You can pay this fine using the button below.
+            </p>
+            <form th:action="@{/fines/{id}/pay(id=${fine.fineID})}" method="post">
+                <button type="submit" class="btn-action btn-pay">Pay Fine</button>
+            </form>
+        </div>
+
+        <!-- Staff: can waive UNPAID fine -->
+        <div th:if="${isStaff 
+                     and fine.status == T(edu.sjsu.library.models.Fine.FineStatus).UNPAID}">
+            <p class="message info">
+                This fine is currently unpaid. As staff, you may waive it.
+            </p>
+            <form th:action="@{/fines/{id}/waive(id=${fine.fineID})}" method="post"
+                  onsubmit="return confirm('Are you sure you want to waive this fine?');">
+                <button type="submit" class="btn-action btn-waive">Waive Fine</button>
+            </form>
+        </div>
+
+        <!-- No actions available -->
+        <div th:if="${(fine.status != T(edu.sjsu.library.models.Fine.FineStatus).UNPAID)}">
+            <p class="message info">
+                No further actions are available for this fine (it is already
+                <span th:text="${fine.status}">STATUS</span>.
+            </p>
+        </div>
+    </div>
+
+</main>
+
+<script>
+    document.getElementById("logoutButton").addEventListener("click", async () => {
+        try {
+            await fetch("/api/auth/logout", { method: "POST" });
+        } catch (e) {}
+        window.location.href = "/";
+    });
+</script>
+
+</body>
+</html>
