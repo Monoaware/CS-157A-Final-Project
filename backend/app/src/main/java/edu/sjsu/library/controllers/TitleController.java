@@ -151,19 +151,32 @@ public class TitleController {
             Model model) {
         
         int requestorID = getRequestorId(request);
+
+        authUtils.validateStaffAccess(requestorID);
         
+        // Preserve submitted values in case of error.
+        model.addAttribute("draftIsbn", isbn);
+        model.addAttribute("draftTitle", title);
+        model.addAttribute("draftAuthor", author);
+        model.addAttribute("draftYear", yearPublished);
+        model.addAttribute("draftGenre", genre);
+
         try {
-            Title.Genre genreEnum = Title.Genre.valueOf(genre.toUpperCase());
-            Title newTitle = bookService.addTitle(isbn, title, author, 
+            Title.Genre genreEnum = Title.Genre.valueOf(genre.trim().toUpperCase());
+            Title newTitle = bookService.addTitle(isbn.trim(), title.trim(), author.trim(),
                                                   Year.of(yearPublished), genreEnum, requestorID);
-            
-            model.addAttribute("success", "Title added successfully!");
+
             return "redirect:/titles/" + newTitle.getTitleID();
+        } catch (IllegalArgumentException | java.time.DateTimeException e) {
+            model.addAttribute("error", "Invalid input: " + e.getMessage());
         } catch (Exception e) {
             model.addAttribute("error", "Failed to add title: " + e.getMessage());
-            model.addAttribute("genres", Title.Genre.values());
-            return "title-add";
         }
+
+        model.addAttribute("genres", Title.Genre.values());
+        model.addAttribute("isStaff", true);
+        model.addAttribute("currentUser", userService.findById(requestorID));
+        return "title-add";
     }
 
     // GET /titles/{id}/edit
