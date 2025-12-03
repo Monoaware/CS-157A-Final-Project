@@ -173,6 +173,7 @@
             </div>
             <div>
                 <span class="label">ISBN: </span>
+                <!-- adjust to title.isbn if needed -->
                 <span th:text="${title.ISBN}">1234567890</span>
             </div>
             <div>
@@ -207,7 +208,7 @@
                 <th>Barcode</th>
                 <th>Location</th>
                 <th>Status</th>
-                <th>Visible</th>
+                <th th:if="${isStaff}">Visible</th>
                 <th>Action</th>
             </tr>
             </thead>
@@ -222,7 +223,9 @@
 <script th:inline="javascript">
     // Values from server
     const titleId = /*[[${title.titleID}]]*/ 0;
-    const isStaff = /*[[${isStaff}]]*/ False;
+    const isStaff = /*[[${isStaff}]]*/ false;
+    // total available copies for this title
+    const availableCopies = /*[[${availability != null ? availability.availableCopies : 0}]]*/ 0;
 
     document.getElementById("logoutButton").addEventListener("click", async () => {
         try {
@@ -273,13 +276,53 @@
             copies.forEach(c => {
                 const tr = document.createElement("tr");
 
-                // Adjust these property names if your Copy model uses different getters
                 const status   = c.status || c.copyStatus || "";
                 const visible  = (c.visible === undefined || c.visible === null) ? "" : c.visible;
                 const barcode  = c.barcode || "";
                 const location = c.location || "";
 
-                const isAvailable = (status === "AVAILABLE");
+                const isAvailable  = (status === "AVAILABLE");
+                const isCheckedOut = (status === "CHECKED_OUT");
+
+                // Decide what action button to show (members only)
+                let actionHtml = "";
+                if (!isStaff) {
+                    if (isAvailable) {
+                        // Normal checkout button when copy is available
+                        actionHtml = `
+                            <button class="btn-primary btn-action"
+                                    data-action="checkout"
+                                    data-barcode="${barcode}">
+                                Check Out
+                            </button>`;
+                    } else if (isCheckedOut && availableCopies === 0) {
+                        // Only show HOLD when the title has 0 available copies
+                        actionHtml = `
+                            <button class="btn-primary btn-action"
+                                    data-action="hold"
+                                    data-title-id="${titleId}">
+                                Place Hold
+                            </button>`;
+                    } else if (isCheckedOut) {
+                        // Checked out but some other copy is still available → no hold, just info
+                        actionHtml = `
+                            <button class="btn-primary" disabled>
+                                Checked Out
+                            </button>`;
+                    } else {
+                        // Other statuses
+                        actionHtml = `
+                            <button class="btn-primary" disabled>
+                                Unavailable
+                            </button>`;
+                    }
+                } else {
+                    // Staff don't act here
+                    actionHtml = `
+                        <button class="btn-primary" disabled>
+                            Members Only
+                        </button>`;
+                }
 
                 tr.innerHTML = `
                     <td>${c.copyID}</td>
@@ -290,14 +333,8 @@
                             ${status || (isAvailable ? "AVAILABLE" : "UNAVAILABLE")}
                         </span>
                     </td>
-                    <td>${visible}</td>
-                    <td>
-                        <button class="btn-primary"
-                                ${isAvailable && !isStaff ? "" : "disabled"}
-                                data-barcode="${barcode}">
-                            ${isAvailable ? (isStaff ? "Members Only" : "Check Out") : "Unavailable"}
-                        </button>
-                    </td>
+                    ${isStaff ? `<td>${visible}</td>` : ``}
+                    <td>${actionHtml}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -309,45 +346,63 @@
         }
     }
 
-    // Checkout handler: uses BookRecordController (/api/loans/checkout?barcode=...)
+    // Handle both checkout and hold actions
     document.getElementById("copiesTableBody").addEventListener("click", async (e) => {
-        if (e.target.tagName !== "BUTTON") return;
-        const btn = e.target;
-        const barcode = btn.getAttribute("data-barcode");
-        if (!barcode || btn.disabled) return;
+        const btn = e.target.closest(".btn-action");
+        if (!btn) return;
 
+        const action = btn.dataset.action;
         const msgBox = document.getElementById("copiesMessage");
         msgBox.textContent = "";
         msgBox.className = "message";
 
         try {
-            const res = await fetch(`/api/loans/checkout?barcode=${encodeURIComponent(barcode)}`, {
-                method: "POST"
-            });
+            if (action === "checkout") {
+                const barcode = btn.getAttribute("data-barcode");
+                if (!barcode) return;
 
-            if (!res.ok) {
-                msgBox.textContent = "Failed to check out copy (only members can checkout, or copy may not be available).";
-                msgBox.classList.add("error");
-                console.error("Checkout failed:", res.status, res.statusText);
-                return;
+                const res = await fetch(`/api/loans/checkout?barcode=${encodeURIComponent(barcode)}`, {
+                    method: "POST"
+                });
+
+                if (!res.ok) {
+                    msgBox.textContent = "Failed to check out copy (only members can checkout, copy may not be available, or you have reached the maximum loan amount).";
+                    msgBox.classList.add("error");
+                    console.error("Checkout failed:", res.status, res.statusText);
+                    return;
+                }
+
+                msgBox.textContent = "Copy checked out successfully!";
+                msgBox.classList.add("success");
+            } else if (action === "hold") {
+                // Place a hold on this title (members only)
+                const res = await fetch(`/api/holds/${titleId}`, {
+                    method: "POST"
+                });
+
+                if (!res.ok) {
+                    msgBox.textContent = "Failed to place hold (only members can place holds, or you may already have a hold).";
+                    msgBox.classList.add("error");
+                    console.error("Hold failed:", res.status, res.statusText);
+                    return;
+                }
+
+                msgBox.textContent = "Hold placed successfully!";
+                msgBox.classList.add("success");
             }
 
-            msgBox.textContent = "Copy checked out successfully!";
-            msgBox.classList.add("success");
-
-            // Refresh list to update statuses
+            // Refresh list to update statuses / buttons
             await loadCopies();
 
         } catch (err) {
-            console.error("Error during checkout:", err);
-            msgBox.textContent = "Network error while checking out copy.";
+            console.error("Error during action:", err);
+            msgBox.textContent = "Network error while performing action.";
             msgBox.classList.add("error");
         }
     });
 
     loadCopies();
 </script>
-
 
 </body>
 </html>

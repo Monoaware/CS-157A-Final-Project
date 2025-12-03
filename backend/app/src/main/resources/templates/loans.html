@@ -149,6 +149,26 @@
             opacity: 0.5;
             cursor: default;
         }
+
+        .btn-cancel-hold {
+            background: #e67e22;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-cancel-hold:hover {
+            background: #d35400;
+        }
+
+        .btn-cancel-hold[disabled] {
+            opacity: 0.5;
+            cursor: default;
+        }
     </style>
 </head>
 <body>
@@ -157,7 +177,7 @@
     <h1>My Loans</h1>
     <div class="header-right">
         <a href="/dashboard" class="back-btn">← Back to Dashboard</a>
-        <a href="/fines" class="back-btn">View Fines</a> <!-- NEW BUTTON -->
+        <a href="/fines" class="back-btn">View Fines</a>
         <button class="logout-btn" id="logoutButton">Logout</button>
     </div>
 </header>
@@ -203,6 +223,25 @@
             <tbody id="allLoansTableBody"></tbody>
         </table>
     </div>
+
+    <!-- My Holds (member-style view, for whoever is logged in) -->
+    <div class="card">
+        <h2>My Holds</h2>
+        <p class="message info" id="myHoldsMessage">Loading your holds...</p>
+        <table>
+            <thead>
+            <tr>
+                <th>Hold ID</th>
+                <th>Title ID</th>
+                <th>Status</th>
+                <th>Placed Date</th>
+                <th>Pickup Deadline</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="myHoldsTableBody"></tbody>
+        </table>
+    </div>
 </main>
 
 <script th:inline="javascript">
@@ -239,6 +278,8 @@
 
             // Load MY loans
             await loadMyLoans();
+            // Load MY holds
+            await loadMyHolds();
 
             // Staff-only: show card and load all loans
             if (CURRENT_USER_ROLE === "STAFF") {
@@ -340,7 +381,7 @@
             });
 
             if (!resp.ok) {
-                messageEl.textContent = `Failed to renew loan (HTTP ${resp.status}).`;
+                messageEl.textContent = `Reached a maximum number of renewals for this loan or cannot renew (HTTP ${resp.status}).`;
                 messageEl.classList.add("error");
                 return;
             }
@@ -357,62 +398,122 @@
         }
     });
 
-    // Staff-only: load ALL loans via GET /api/loans
-    async function loadAllLoansForStaff() {
-        const card = document.getElementById("allLoansCard");
-        const messageEl = document.getElementById("allLoansMessage");
-        const tbody = document.getElementById("allLoansTableBody");
+    // ====== HOLDS (member-style view) ======
 
-        if (!card) return;
-
-        messageEl.textContent = "Loading all loans...";
+    async function loadMyHolds() {
+        const messageEl = document.getElementById("myHoldsMessage");
+        const tbody = document.getElementById("myHoldsTableBody");
+        messageEl.textContent = "Loading your holds...";
         messageEl.className = "message info";
         tbody.innerHTML = "";
 
+        if (!CURRENT_USER_ID) {
+            messageEl.textContent = "Could not determine current user.";
+            messageEl.classList.add("error");
+            return;
+        }
+
         try {
-            const resp = await fetch(`/api/loans`);
+            const resp = await fetch(`/api/holds/user/${CURRENT_USER_ID}`);
             if (!resp.ok) {
-                messageEl.textContent = `Error loading all loans (HTTP ${resp.status}).`;
+                messageEl.textContent = `Error loading holds (HTTP ${resp.status}).`;
                 messageEl.classList.add("error");
                 return;
             }
 
-            const loans = await resp.json();
-            if (!loans || loans.length === 0) {
-                messageEl.textContent = "There are no loans in the system.";
+            const holds = await resp.json();
+            if (!holds || holds.length === 0) {
+                messageEl.textContent = "You currently have no holds.";
                 messageEl.classList.remove("error");
                 messageEl.classList.add("info");
+                tbody.innerHTML = "";
                 return;
             }
 
             messageEl.textContent = "";
             tbody.innerHTML = "";
 
-            for (const loan of loans) {
+            for (const hold of holds) {
                 const tr = document.createElement("tr");
 
-                const checkoutDate = formatDateTime(loan.checkoutDate);
-                const dueDate = formatDateTime(loan.dueDate);
-                const returnDate = loan.returnDate ? formatDateTime(loan.returnDate) : "";
+                const holdId  = hold.holdID  ?? hold.holdId  ?? "";
+                const titleId = hold.titleID ?? hold.titleId ?? "";
+                const status  = hold.status  ?? "";
+
+                // 👇 try all likely property names
+                const placed = formatDateTime(
+                    hold.placedAt   || hold.placedat   || hold.placedDate ||
+                    hold.createdAt  || hold.holdDate
+                );
+
+                const pickupBy = formatDateTime(
+                    hold.pickupExpire    || hold.pickupexpire ||
+                    hold.pickupDeadline  || hold.expirationDate ||
+                    hold.expiryDate
+                );
+
+                const cancelButtonHtml = `
+                    <button class="btn-cancel-hold" data-hold-id="${holdId}">
+                        Cancel
+                    </button>`;
 
                 tr.innerHTML = `
-                    <td>${loan.loanID}</td>
-                    <td>${loan.userID}</td>
-                    <td>${loan.copyID}</td>
-                    <td>${checkoutDate}</td>
-                    <td>${dueDate}</td>
-                    <td>${returnDate}</td>
-                    <td>${loan.renewCount}</td>
+                    <td>${holdId}</td>
+                    <td>${titleId}</td>
+                    <td>${status}</td>
+                    <td>${placed}</td>
+                    <td>${pickupBy}</td>
+                    <td>${cancelButtonHtml}</td>
                 `;
 
                 tbody.appendChild(tr);
             }
         } catch (err) {
-            console.error("Unexpected error while loading all loans:", err);
-            messageEl.textContent = "Unexpected error while loading all loans.";
+            console.error(err);
+            messageEl.textContent = "Unexpected error while loading holds.";
             messageEl.classList.add("error");
         }
     }
+
+
+    // Cancel hold (member/staff cancels their own)
+    document.getElementById("myHoldsTableBody").addEventListener("click", async (e) => {
+        const btn = e.target;
+        if (!btn.classList.contains("btn-cancel-hold")) return;
+
+        const holdId = btn.getAttribute("data-hold-id");
+        if (!holdId) return;
+
+        if (!confirm("Are you sure you want to cancel this hold?")) {
+            return;
+        }
+
+        const messageEl = document.getElementById("myHoldsMessage");
+        messageEl.textContent = "";
+        messageEl.className = "message info";
+
+        try {
+            const resp = await fetch(`/api/holds/${holdId}`, {
+                method: "DELETE"
+            });
+
+            if (resp.status === 204) {
+                messageEl.textContent = "Hold canceled successfully.";
+                messageEl.classList.remove("error");
+                messageEl.classList.add("info");
+                await loadMyHolds();
+            } else {
+                messageEl.textContent = `Failed to cancel hold (HTTP ${resp.status}).`;
+                messageEl.classList.add("error");
+            }
+        } catch (err) {
+            console.error(err);
+            messageEl.textContent = "Unexpected error while canceling hold.";
+            messageEl.classList.add("error");
+        }
+    });
+
+    // ===== UTIL =====
 
     function formatDateTime(value) {
         if (!value) return "";

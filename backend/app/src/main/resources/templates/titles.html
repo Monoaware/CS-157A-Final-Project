@@ -307,16 +307,6 @@
                     <a th:if="${isStaff}"
                        th:href="@{/titles/{id}/edit(id=${t.titleID})}"
                        class="btn-secondary">Edit</a>
-
-                    <form th:if="${isStaff}"
-                          th:action="@{/titles/{id}/delete(id=${t.titleID})}"
-                          method="post"
-                          style="display:inline;">
-                        <button type="submit" class="btn-secondary"
-                                onclick="return confirm('Delete this title?');">
-                            Delete
-                        </button>
-                    </form>
                 </td>
             </tr>
             </tbody>
