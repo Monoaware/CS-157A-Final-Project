@@ -398,6 +398,63 @@
         }
     });
 
+    // Staff-only: load ALL loans via GET /api/loans
+    async function loadAllLoansForStaff() {
+        const card = document.getElementById("allLoansCard");
+        const messageEl = document.getElementById("allLoansMessage");
+        const tbody = document.getElementById("allLoansTableBody");
+
+        if (!card) return;
+
+        messageEl.textContent = "Loading all loans...";
+        messageEl.className = "message info";
+        tbody.innerHTML = "";
+
+        try {
+            const resp = await fetch(`/api/loans`);
+            if (!resp.ok) {
+                messageEl.textContent = `Error loading all loans (HTTP ${resp.status}).`;
+                messageEl.classList.add("error");
+                return;
+            }
+
+            const loans = await resp.json();
+            if (!loans || loans.length === 0) {
+                messageEl.textContent = "There are no loans in the system.";
+                messageEl.classList.remove("error");
+                messageEl.classList.add("info");
+                return;
+            }
+
+            messageEl.textContent = "";
+            tbody.innerHTML = "";
+
+            for (const loan of loans) {
+                const tr = document.createElement("tr");
+
+                const checkoutDate = formatDateTime(loan.checkoutDate);
+                const dueDate = formatDateTime(loan.dueDate);
+                const returnDate = loan.returnDate ? formatDateTime(loan.returnDate) : "";
+
+                tr.innerHTML = `
+                    <td>${loan.loanID}</td>
+                    <td>${loan.userID}</td>
+                    <td>${loan.copyID}</td>
+                    <td>${checkoutDate}</td>
+                    <td>${dueDate}</td>
+                    <td>${returnDate}</td>
+                    <td>${loan.renewCount}</td>
+                `;
+
+                tbody.appendChild(tr);
+            }
+        } catch (err) {
+            console.error("Unexpected error while loading all loans:", err);
+            messageEl.textContent = "Unexpected error while loading all loans.";
+            messageEl.classList.add("error");
+        }
+    }
+
     // ====== HOLDS (member-style view) ======
 
     async function loadMyHolds() {
