@@ -23,6 +23,18 @@ public class BookRecordController {
         this.authUtils = authUtils;
     }
 
+    // GET /api/loans - View all loans (STAFF ONLY)
+    @GetMapping
+    @ResponseBody
+    public ResponseEntity<List<BookRecord>> getAllLoans(HttpServletRequest request) {
+        int requestorID = getRequestorId(request);
+        authUtils.validateStaffAccess(requestorID); // Staff only
+        
+        // Get all loans from the loan service
+        List<BookRecord> allLoans = loanService.getAllLoans(requestorID);
+        return ResponseEntity.ok(allLoans);
+    }
+
     // POST /api/loans/checkout
     // Checkout book (MEMBERS ONLY - staff cannot checkout).
     @PostMapping("/checkout")

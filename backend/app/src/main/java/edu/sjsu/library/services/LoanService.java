@@ -367,4 +367,21 @@ public class LoanService {
         
         return loan;
     }
+
+    // 10. Get all loans (STAFF only). This allows staff to view all loan records in the system.
+    public List<BookRecord> getAllLoans(int requestorID) {
+        // Find the user who is requesting the service.
+        User requestor = userDAO.findById(requestorID);
+        if (requestor == null) {
+            throw new AuthenticationFailedException("User not found.");
+        }
+        
+        // Only staff can view all loans.
+        if (!requestor.isStaff()) {
+            throw new AuthorizationFailedException("Staff access required to view all loans.");
+        }
+        
+        // Return all loan records.
+        return bookRecordDAO.findAll();
+    }
 }
