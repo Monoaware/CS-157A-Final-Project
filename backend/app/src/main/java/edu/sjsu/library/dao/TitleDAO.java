@@ -151,7 +151,7 @@ public class TitleDAO {
             t.getISBN(),
             t.getTitle(),
             t.getAuthor(),
-            t.getYearPublished(),
+            t.getYearPublished().getValue(),
             t.getGenre().toString(),
             t.isVisible()
         );
@@ -169,8 +169,8 @@ public class TitleDAO {
             t.getISBN(),
             t.getTitle(),
             t.getAuthor(),
-            t.getYearPublished(),
-            t.getGenre(),
+            t.getYearPublished().getValue(),
+            t.getGenre().toString(),
             t.isVisible(),
             t.getTitleID()              
         );
