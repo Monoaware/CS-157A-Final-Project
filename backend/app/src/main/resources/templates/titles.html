@@ -107,7 +107,9 @@
             font-size: 14px;
         }
 
-        input, select {
+        input[type="text"],
+        input[type="number"],
+        select {
             width: 100%;
             padding: 8px 10px;
             margin-top: 4px;
@@ -116,6 +118,21 @@
             font-size: 14px;
             box-sizing: border-box;
         }
+
+        input[type="checkbox"] {
+            width: auto;
+            margin: 0 6px 0 0;
+        }
+
+        /* input, select {
+            width: 100%;
+            padding: 8px 10px;
+            margin-top: 4px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            box-sizing: border-box;
+        } */
 
         .btn-primary {
             background: #3498db;
@@ -227,12 +244,12 @@
                 <div>
                     <label for="title">Title</label>
                     <input id="title" name="title" type="text"
-                           th:value="${param.title}" placeholder="e.g. The Great Gatsby">
+                           th:value="${searchTitle}" placeholder="e.g. The Great Gatsby">
                 </div>
                 <div>
                     <label for="author">Author</label>
                     <input id="author" name="author" type="text"
-                           th:value="${param.author}" placeholder="e.g. J.K. Rowling">
+                           th:value="${searchAuthor}" placeholder="e.g. J.K. Rowling">
                 </div>
                 <div>
                     <label for="genre">Genre</label>
@@ -241,7 +258,7 @@
                         <option th:each="g : ${genres}"
                                 th:value="${g.name()}"
                                 th:text="${g.name()}"
-                                th:selected="${param.genre} == ${g.name()}">
+                                th:selected="${searchGenre != null and searchGenre == g.name()}">
                         </option>
                     </select>
                 </div>
@@ -251,17 +268,17 @@
                 <div>
                     <label for="startYear">Start Year</label>
                     <input id="startYear" name="startYear" type="number" min="0"
-                           th:value="${param.startYear}">
+                           th:value="${startYear}">
                 </div>
                 <div>
                     <label for="endYear">End Year</label>
                     <input id="endYear" name="endYear" type="number" min="0"
-                           th:value="${param.endYear}">
+                           th:value="${endYear}">
                 </div>
                 <div style="display:flex; align-items:center; margin-top:15px;">
                     <input id="availableOnly" name="availableOnly" type="checkbox"
-                           th:checked="${param.availableOnly} == 'true'"/>
-                    <label for="availableOnly" style="margin:0;">Available only</label>
+                           th:checked="${availableOnly}" style="margin-right: 6px;"/>
+                    <label for="availableOnly" style="margin:0; cursor: pointer;">Available only</label>
                 </div>
             </div>
 

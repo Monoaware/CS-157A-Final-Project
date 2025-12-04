@@ -124,7 +124,7 @@ public class TitleDAO {
 
     public List<Title> findByGenre(Genre genre) {
         return jdbc.query(
-            "SELECT id, isbn, title, author, yearpublished, genre, isvisible FROM titles WHERE genre = ? ORDER BY title",
+            "SELECT id, isbn, title, author, yearpublished, genre, isvisible FROM titles WHERE UPPER(genre) = UPPER(?) ORDER BY title",
             (rs, n) -> new Title(
                 rs.getInt("id"),
                 rs.getString("isbn"),

@@ -57,18 +57,26 @@ public class TitleController {
         int requestorID = getRequestorId(request);
         User requestor = userService.findById(requestorID);
         
+        // Debug logging
+        System.out.println("DEBUG - Title param: " + title);
+        System.out.println("DEBUG - Author param: " + author);
+        System.out.println("DEBUG - Genre param: " + genre);
+        System.out.println("DEBUG - Genre isBlank: " + (genre != null && genre.isBlank()));
+        
         List<Title> titles;
         
         // Apply filters based on request parameters.
-        if (title != null && !title.isEmpty()) {
-            titles = bookService.searchByTitle(title, requestorID);
-        } else if (author != null && !author.isEmpty()) {
-            titles = bookService.searchByAuthor(author, requestorID);
-        } else if (genre != null && !genre.isEmpty()) {
+        if (title != null && !title.isBlank()) {
+            titles = bookService.searchByTitle(title.trim(), requestorID);
+        } else if (author != null && !author.isBlank()) {
+            titles = bookService.searchByAuthor(author.trim(), requestorID);
+        } else if (genre != null && !genre.isBlank()) {
             try {
-                Title.Genre genreEnum = Title.Genre.valueOf(genre.toUpperCase());
+                Title.Genre genreEnum = Title.Genre.valueOf(genre.trim().toUpperCase().replace(" ", "_"));
                 titles = bookService.searchByGenre(genreEnum, requestorID);
+                System.out.println("DEBUG - Genre filter applied, found " + titles.size() + " titles");
             } catch (IllegalArgumentException e) {
+                System.out.println("DEBUG - Genre parse error: " + e.getMessage());
                 model.addAttribute("error", "Invalid genre: " + genre);
                 titles = bookService.getAllTitles(requestorID);
             }
@@ -84,6 +92,14 @@ public class TitleController {
         if (availableOnly) {
             titles = bookService.filterTitlesByAvailability(titles, true, requestorID);
         }
+
+        // Preserve search parameters in model for form repopulation
+        model.addAttribute("searchTitle", title);
+        model.addAttribute("searchAuthor", author);
+        model.addAttribute("searchGenre", genre);
+        model.addAttribute("startYear", startYear);
+        model.addAttribute("endYear", endYear);
+        model.addAttribute("availableOnly", availableOnly);
         
         model.addAttribute("titles", titles);
         model.addAttribute("isStaff", requestor.isStaff());
