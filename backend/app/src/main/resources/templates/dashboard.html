@@ -150,10 +150,10 @@
             <a href="/titles" class="btn btn-primary">View Books</a>
         </div>
 
-        <!-- 3. Loaned Books -->
-        <div class="card">
-            <h2>Loaned Books</h2>
-            <p>See which books are currently loaned out.</p>
+        <!-- 3. Loans (All Users) -->
+        <div class="card" id="loansCard">
+            <h2 id="loansCardTitle">Loaned Books</h2>
+            <p id="loansCardDescription">See which books are currently loaned out.</p>
             <a href="/loans" class="btn btn-primary">View Loans</a>
         </div>
 
@@ -196,9 +196,17 @@
             roleBadge.textContent = role;
 
             if (role === "STAFF") {
+                // Show staff-only elements
                 document.querySelectorAll(".staff-only").forEach(el => {
                     el.style.display = "block";
                 });
+                // Customize loans card for staff
+                document.getElementById("loansCardTitle").textContent = "All Loans";
+                document.getElementById("loansCardDescription").textContent = "View all loans in the system.";
+            } else {
+                // For members, customize loans card
+                document.getElementById("loansCardTitle").textContent = "My Loans";
+                document.getElementById("loansCardDescription").textContent = "See your currently loaned books.";
             }
         } catch (err) {
             window.location.href = "/";

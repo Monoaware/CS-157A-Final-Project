@@ -200,7 +200,7 @@
     <h1>Fines</h1>
     <div class="header-right">
         <a href="/dashboard" class="btn-link">← Dashboard</a>
-        <a href="/loans" class="btn-link">My Loans</a>
+        <a href="/loans" class="btn-link" th:if="${!isStaff}">My Loans</a>
         <button id="logoutButton" class="logout-btn">Logout</button>
     </div>
 </header>

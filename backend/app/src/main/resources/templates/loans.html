@@ -183,8 +183,8 @@
 </header>
 
 <main>
-    <!-- My loans -->
-    <div class="card">
+    <!-- My loans (members only) -->
+    <div class="card" id="myLoansCard">
         <h2>My Loans</h2>
         <p class="message info" id="myLoansMessage">Loading your loans...</p>
         <table>
@@ -224,8 +224,8 @@
         </table>
     </div>
 
-    <!-- My Holds (member-style view, for whoever is logged in) -->
-    <div class="card">
+    <!-- My Holds (members only) -->
+    <div class="card" id="myHoldsCard">
         <h2>My Holds</h2>
         <p class="message info" id="myHoldsMessage">Loading your holds...</p>
         <table>
@@ -277,16 +277,20 @@
                 });
             }
 
-            // Load MY loans
-            await loadMyLoans();
-            // Load MY holds
-            await loadMyHolds();
-
-            // Staff-only: show card and load all loans
+            // Staff vs Member view
             if (CURRENT_USER_ROLE === "STAFF") {
+                // Hide My Loans and My Holds for staff
+                document.getElementById("myLoansCard").style.display = "none";
+                document.getElementById("myHoldsCard").style.display = "none";
+                
+                // Show and load all loans
                 const card = document.getElementById("allLoansCard");
                 card.style.display = "block";
                 await loadAllLoansForStaff();
+            } else {
+                // Members: load their loans and holds
+                await loadMyLoans();
+                await loadMyHolds();
             }
 
         } catch (err) {
