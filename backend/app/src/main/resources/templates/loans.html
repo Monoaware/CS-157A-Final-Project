@@ -207,6 +207,67 @@
     <!-- All loans (staff only) -->
     <div class="card" id="allLoansCard" style="display:none;">
         <h2>All Loans (Staff)</h2>
+        
+        <!-- Filter Form -->
+        <form id="allLoansFilterForm" style="margin-bottom: 20px; padding: 15px; background: #f8f9f9; border-radius: 5px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
+                <div>
+                    <label for="filterLoanId" style="font-size: 12px; font-weight: 600;">Loan ID</label>
+                    <input type="number" id="filterLoanId" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label for="filterUserId" style="font-size: 12px; font-weight: 600;">User ID</label>
+                    <input type="number" id="filterUserId" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label for="filterCopyId" style="font-size: 12px; font-weight: 600;">Copy ID</label>
+                    <input type="number" id="filterCopyId" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label for="filterRenewCount" style="font-size: 12px; font-weight: 600;">Renew Count</label>
+                    <input type="number" id="filterRenewCount" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
+                <div>
+                    <label for="filterCheckoutFrom" style="font-size: 12px; font-weight: 600;">Checkout From</label>
+                    <input type="date" id="filterCheckoutFrom" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label for="filterCheckoutTo" style="font-size: 12px; font-weight: 600;">Checkout To</label>
+                    <input type="date" id="filterCheckoutTo" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label for="filterDueFrom" style="font-size: 12px; font-weight: 600;">Due From</label>
+                    <input type="date" id="filterDueFrom" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label for="filterDueTo" style="font-size: 12px; font-weight: 600;">Due To</label>
+                    <input type="date" id="filterDueTo" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
+                <div>
+                    <label for="filterReturnFrom" style="font-size: 12px; font-weight: 600;">Return From</label>
+                    <input type="date" id="filterReturnFrom" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label for="filterReturnTo" style="font-size: 12px; font-weight: 600;">Return To</label>
+                    <input type="date" id="filterReturnTo" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label for="filterActiveOnly" style="font-size: 12px; font-weight: 600; display: flex; align-items: center; margin-top: 20px;">
+                        <input type="checkbox" id="filterActiveOnly" style="margin-right: 6px;">
+                        Active Loans Only
+                    </label>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn-renew" style="padding: 8px 16px;">Apply Filters</button>
+                <button type="button" id="clearFiltersBtn" class="btn-cancel-hold" style="padding: 8px 16px; background: #95a5a6;">Clear Filters</button>
+            </div>
+        </form>
+        
         <p class="message info" id="allLoansMessage">Loading all loans...</p>
         <table>
             <thead>
@@ -404,7 +465,7 @@
     });
 
     // Staff-only: load ALL loans via GET /api/loans
-    async function loadAllLoansForStaff() {
+    async function loadAllLoansForStaff(applyFilters = false) {
         const card = document.getElementById("allLoansCard");
         const messageEl = document.getElementById("allLoansMessage");
         const tbody = document.getElementById("allLoansTableBody");
@@ -423,7 +484,7 @@
                 return;
             }
 
-            const loans = await resp.json();
+            let loans = await resp.json();
             if (!loans || loans.length === 0) {
                 messageEl.textContent = "There are no loans in the system.";
                 messageEl.classList.remove("error");
@@ -431,7 +492,20 @@
                 return;
             }
 
-            messageEl.textContent = "";
+            // Apply client-side filters if requested
+            if (applyFilters) {
+                loans = applyLoanFilters(loans);
+            }
+
+            if (loans.length === 0) {
+                messageEl.textContent = "No loans match the filter criteria.";
+                messageEl.classList.remove("error");
+                messageEl.classList.add("info");
+                tbody.innerHTML = "";
+                return;
+            }
+
+            messageEl.textContent = `Showing ${loans.length} loan(s)`;
             tbody.innerHTML = "";
 
             for (const loan of loans) {
@@ -459,6 +533,73 @@
             messageEl.classList.add("error");
         }
     }
+
+    function applyLoanFilters(loans) {
+        const filterLoanId = document.getElementById("filterLoanId").value;
+        const filterUserId = document.getElementById("filterUserId").value;
+        const filterCopyId = document.getElementById("filterCopyId").value;
+        const filterRenewCount = document.getElementById("filterRenewCount").value;
+        const filterCheckoutFrom = document.getElementById("filterCheckoutFrom").value;
+        const filterCheckoutTo = document.getElementById("filterCheckoutTo").value;
+        const filterDueFrom = document.getElementById("filterDueFrom").value;
+        const filterDueTo = document.getElementById("filterDueTo").value;
+        const filterReturnFrom = document.getElementById("filterReturnFrom").value;
+        const filterReturnTo = document.getElementById("filterReturnTo").value;
+        const filterActiveOnly = document.getElementById("filterActiveOnly").checked;
+
+        return loans.filter(loan => {
+            // Filter by Loan ID
+            if (filterLoanId && loan.loanID !== parseInt(filterLoanId)) return false;
+            
+            // Filter by User ID
+            if (filterUserId && loan.userID !== parseInt(filterUserId)) return false;
+            
+            // Filter by Copy ID
+            if (filterCopyId && loan.copyID !== parseInt(filterCopyId)) return false;
+            
+            // Filter by Renew Count
+            if (filterRenewCount && loan.renewCount !== parseInt(filterRenewCount)) return false;
+            
+            // Filter by Checkout Date Range
+            if (filterCheckoutFrom || filterCheckoutTo) {
+                const checkoutDate = new Date(loan.checkoutDate);
+                if (filterCheckoutFrom && checkoutDate < new Date(filterCheckoutFrom)) return false;
+                if (filterCheckoutTo && checkoutDate > new Date(filterCheckoutTo + 'T23:59:59')) return false;
+            }
+            
+            // Filter by Due Date Range
+            if (filterDueFrom || filterDueTo) {
+                const dueDate = new Date(loan.dueDate);
+                if (filterDueFrom && dueDate < new Date(filterDueFrom)) return false;
+                if (filterDueTo && dueDate > new Date(filterDueTo + 'T23:59:59')) return false;
+            }
+            
+            // Filter by Return Date Range
+            if (filterReturnFrom || filterReturnTo) {
+                if (!loan.returnDate) return false; // No return date, skip this loan
+                const returnDate = new Date(loan.returnDate);
+                if (filterReturnFrom && returnDate < new Date(filterReturnFrom)) return false;
+                if (filterReturnTo && returnDate > new Date(filterReturnTo + 'T23:59:59')) return false;
+            }
+            
+            // Filter by Active Only (no return date)
+            if (filterActiveOnly && loan.returnDate) return false;
+            
+            return true;
+        });
+    }
+
+    // Filter form submit handler
+    document.getElementById("allLoansFilterForm")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await loadAllLoansForStaff(true);
+    });
+
+    // Clear filters button handler
+    document.getElementById("clearFiltersBtn")?.addEventListener("click", async () => {
+        document.getElementById("allLoansFilterForm").reset();
+        await loadAllLoansForStaff(false);
+    });
 
     // ====== HOLDS (member-style view) ======
 
