@@ -294,4 +294,60 @@ public class HoldService {
 
         return availableCopies.isEmpty();
     }
+
+    // 10. Get all holds (STAFF only).
+    public List<Hold> getAllHolds(int requestorID) {
+        authUtils.validateStaffAccess(requestorID);
+        return holdDAO.findAll();
+    }
+
+    // 11. Mark hold as ready (STAFF only).
+    public Hold markHoldReady(int holdID, int requestorID) {
+        authUtils.validateStaffAccess(requestorID);
+        
+        Hold hold = holdDAO.findById(holdID);
+        if (hold == null) {
+            throw new IllegalArgumentException("Hold not found with ID: " + holdID);
+        }
+        
+        if (hold.getStatus() != Hold.HoldStatus.QUEUED) {
+            throw new IllegalArgumentException("Only queued holds can be marked as ready.");
+        }
+        
+        hold.markReady(LocalDateTime.now());
+        holdDAO.update(hold);
+        
+        return hold;
+    }
+
+    // 12. Mark hold as expired (STAFF only).
+    public Hold markHoldExpired(int holdID, int requestorID) {
+        authUtils.validateStaffAccess(requestorID);
+        
+        Hold hold = holdDAO.findById(holdID);
+        if (hold == null) {
+            throw new IllegalArgumentException("Hold not found with ID: " + holdID);
+        }
+        
+        if (hold.getStatus() != Hold.HoldStatus.READY) {
+            throw new IllegalArgumentException("Only ready holds can be marked as expired.");
+        }
+        
+        // Mark copy as available again if it was reserved
+        if (hold.getCopyID() != null && hold.getCopyID() != 0) {
+            Copy copy = copyDAO.findById(hold.getCopyID());
+            if (copy != null && copy.getStatus() == Copy.CopyStatus.RESERVED) {
+                copy.markAvailable();
+                copyDAO.update(copy);
+            }
+        }
+        
+        hold.markExpired();
+        holdDAO.update(hold);
+        
+        // Reorder the queue
+        reorderHoldQueue(hold.getTitleID());
+        
+        return hold;
+    }
 }

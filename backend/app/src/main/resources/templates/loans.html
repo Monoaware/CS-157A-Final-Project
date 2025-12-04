@@ -409,6 +409,10 @@
                 const renewButtonHtml = canRenew
                     ? `<button class="btn-renew" data-loan-id="${loan.loanID}">Renew</button>`
                     : "";
+                
+                const returnButtonHtml = canRenew
+                    ? `<button class="btn-cancel-hold" data-loan-id="${loan.loanID}" data-action="return">Return</button>`
+                    : "";
 
                 tr.innerHTML = `
                     <td>${loan.loanID}</td>
@@ -418,7 +422,7 @@
                     <td>${returnDate}</td>
                     <td>${loan.renewCount}</td>
                     <td class="${statusClass}">${statusText}</td>
-                    <td>${renewButtonHtml}</td>
+                    <td>${renewButtonHtml} ${returnButtonHtml}</td>
                 `;
 
                 tbody.appendChild(tr);
@@ -433,35 +437,76 @@
     // Renew button handler (delegated)
     document.getElementById("myLoansTableBody").addEventListener("click", async (e) => {
         const btn = e.target;
-        if (!btn.classList.contains("btn-renew")) return;
+        
+        // Handle Renew button
+        if (btn.classList.contains("btn-renew")) {
+            const loanId = btn.getAttribute("data-loan-id");
+            if (!loanId) return;
 
-        const loanId = btn.getAttribute("data-loan-id");
-        if (!loanId) return;
+            const messageEl = document.getElementById("myLoansMessage");
+            messageEl.textContent = "";
+            messageEl.className = "message info";
 
-        const messageEl = document.getElementById("myLoansMessage");
-        messageEl.textContent = "";
-        messageEl.className = "message info";
+            try {
+                const resp = await fetch(`/api/loans/renew/${loanId}`, {
+                    method: "POST"
+                });
 
-        try {
-            const resp = await fetch(`/api/loans/renew/${loanId}`, {
-                method: "POST"
-            });
+                if (!resp.ok) {
+                    messageEl.textContent = `Reached a maximum number of renewals for this loan or cannot renew (HTTP ${resp.status}).`;
+                    messageEl.classList.add("error");
+                    return;
+                }
 
-            if (!resp.ok) {
-                messageEl.textContent = `Reached a maximum number of renewals for this loan or cannot renew (HTTP ${resp.status}).`;
+                messageEl.textContent = "Loan renewed successfully.";
+                messageEl.classList.remove("error");
+                messageEl.classList.add("info");
+
+                await loadMyLoans();
+            } catch (err) {
+                console.error(err);
+                messageEl.textContent = "Unexpected error while renewing loan.";
                 messageEl.classList.add("error");
+            }
+            return;
+        }
+        
+        // Handle Return button
+        if (btn.classList.contains("btn-cancel-hold") && btn.getAttribute("data-action") === "return") {
+            const loanId = btn.getAttribute("data-loan-id");
+            if (!loanId) return;
+
+            if (!confirm("Are you sure you want to return this book?")) {
                 return;
             }
 
-            messageEl.textContent = "Loan renewed successfully.";
-            messageEl.classList.remove("error");
-            messageEl.classList.add("info");
+            const messageEl = document.getElementById("myLoansMessage");
+            messageEl.textContent = "";
+            messageEl.className = "message info";
 
-            await loadMyLoans();
-        } catch (err) {
-            console.error(err);
-            messageEl.textContent = "Unexpected error while renewing loan.";
-            messageEl.classList.add("error");
+            try {
+                const resp = await fetch(`/api/loans/return/${loanId}`, {
+                    method: "POST"
+                });
+
+                if (!resp.ok) {
+                    const errorText = await resp.text();
+                    messageEl.textContent = `Failed to return book: ${errorText || 'HTTP ' + resp.status}`;
+                    messageEl.classList.add("error");
+                    return;
+                }
+
+                messageEl.textContent = "Book returned successfully.";
+                messageEl.classList.remove("error");
+                messageEl.classList.add("info");
+
+                await loadMyLoans();
+            } catch (err) {
+                console.error(err);
+                messageEl.textContent = "Unexpected error while returning book.";
+                messageEl.classList.add("error");
+            }
+            return;
         }
     });
 

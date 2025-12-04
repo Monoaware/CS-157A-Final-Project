@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Holds Management</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px 40px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border: 1px solid white;
+            padding: 6px 12px;
+            border-radius: 5px;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            background: #e74c3c;
+            color: white;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 1200px;
+            margin-top: 30px;
+            padding: 0 20px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ecf0f1;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #ecf0f1;
+            font-weight: 600;
+        }
+
+        tbody tr:hover {
+            background: #f8f9f9;
+        }
+
+        .status-pending {
+            color: #e67e22;
+            font-weight: 600;
+        }
+
+        .status-ready {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        .status-expired {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .status-cancelled {
+            color: #95a5a6;
+            font-weight: 600;
+        }
+
+        .message {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .message.error {
+            color: #e74c3c;
+        }
+
+        .message.info {
+            color: #7f8c8d;
+        }
+
+        .btn-action {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 4px;
+        }
+
+        .btn-action:hover {
+            background: #2980b9;
+        }
+
+        .btn-action.ready {
+            background: #27ae60;
+        }
+
+        .btn-action.ready:hover {
+            background: #229954;
+        }
+
+        .btn-action.cancel {
+            background: #e74c3c;
+        }
+
+        .btn-action.cancel:hover {
+            background: #c0392b;
+        }
+
+        .btn-action.expire {
+            background: #95a5a6;
+        }
+
+        .btn-action.expire:hover {
+            background: #7f8c8d;
+        }
+
+        .filter-form {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9f9;
+            border-radius: 5px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .filter-field label {
+            font-size: 12px;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .filter-field input,
+        .filter-field select {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-filter {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn-filter.primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-filter.primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-filter.secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-filter.secondary:hover {
+            background: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Holds Management</h1>
+    <div class="header-right">
+        <a href="/dashboard" class="back-btn">← Back to Dashboard</a>
+        <button class="logout-btn" id="logoutButton">Logout</button>
+    </div>
+</header>
+
+<main>
+    <div class="card">
+        <h2>All Holds (Staff)</h2>
+        
+        <!-- Filter Form -->
+        <form id="holdsFilterForm" class="filter-form">
+            <div class="filter-grid">
+                <div class="filter-field">
+                    <label for="filterHoldId">Hold ID</label>
+                    <input type="number" id="filterHoldId">
+                </div>
+                <div class="filter-field">
+                    <label for="filterUserId">User ID</label>
+                    <input type="number" id="filterUserId">
+                </div>
+                <div class="filter-field">
+                    <label for="filterTitleId">Title ID</label>
+                    <input type="number" id="filterTitleId">
+                </div>
+                <div class="filter-field">
+                    <label for="filterCopyId">Copy ID</label>
+                    <input type="number" id="filterCopyId">
+                </div>
+                <div class="filter-field">
+                    <label for="filterStatus">Status</label>
+                    <select id="filterStatus">
+                        <option value="">All Statuses</option>
+                        <option value="QUEUED">Queued</option>
+                        <option value="READY">Ready for Pickup</option>
+                        <option value="EXPIRED">Expired</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="btn-filter primary">Apply Filters</button>
+                <button type="button" id="clearFiltersBtn" class="btn-filter secondary">Clear Filters</button>
+            </div>
+        </form>
+        
+        <p class="message info" id="holdsMessage">Loading holds...</p>
+        <table>
+            <thead>
+            <tr>
+                <th>Hold ID</th>
+                <th>User ID</th>
+                <th>Title ID</th>
+                <th>Copy ID</th>
+                <th>Status</th>
+                <th>Position</th>
+                <th>Placed Date</th>
+                <th>Ready Date</th>
+                <th>Pickup Expires</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="holdsTableBody"></tbody>
+        </table>
+    </div>
+</main>
+
+<script th:inline="javascript">
+    let CURRENT_USER_ID = null;
+    let CURRENT_USER_ROLE = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+        initHoldsPage();
+    });
+
+    async function initHoldsPage() {
+        try {
+            // Get current user info
+            const res = await fetch("/api/users/me");
+            if (!res.ok) {
+                window.location.href = "/";
+                return;
+            }
+
+            const user = await res.json();
+            CURRENT_USER_ID = user.userID;
+            CURRENT_USER_ROLE = user.role;
+
+            // Only staff can access this page
+            if (CURRENT_USER_ROLE !== "STAFF") {
+                alert("Access denied. Staff only.");
+                window.location.href = "/dashboard";
+                return;
+            }
+
+            // Attach logout handler
+            const logoutBtn = document.getElementById("logoutButton");
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", async () => {
+                    try {
+                        await fetch("/api/auth/logout", { method: "POST" });
+                    } catch (e) {}
+                    window.location.href = "/";
+                });
+            }
+
+            // Load all holds
+            await loadAllHolds();
+
+        } catch (err) {
+            console.error("Error initializing holds page:", err);
+            window.location.href = "/";
+        }
+    }
+
+    async function loadAllHolds(applyFilters = false) {
+        const messageEl = document.getElementById("holdsMessage");
+        const tbody = document.getElementById("holdsTableBody");
+
+        messageEl.textContent = "Loading holds...";
+        messageEl.className = "message info";
+        tbody.innerHTML = "";
+
+        try {
+            const resp = await fetch("/api/holds");
+            if (!resp.ok) {
+                messageEl.textContent = `Error loading holds (HTTP ${resp.status}).`;
+                messageEl.classList.add("error");
+                return;
+            }
+
+            let holds = await resp.json();
+            if (!holds || holds.length === 0) {
+                messageEl.textContent = "There are no holds in the system.";
+                messageEl.classList.remove("error");
+                messageEl.classList.add("info");
+                return;
+            }
+
+            // Apply client-side filters if requested
+            if (applyFilters) {
+                holds = applyHoldFilters(holds);
+            }
+
+            if (holds.length === 0) {
+                messageEl.textContent = "No holds match the filter criteria.";
+                messageEl.classList.remove("error");
+                messageEl.classList.add("info");
+                tbody.innerHTML = "";
+                return;
+            }
+
+            messageEl.textContent = `Showing ${holds.length} hold(s)`;
+            tbody.innerHTML = "";
+
+            for (const hold of holds) {
+                const tr = document.createElement("tr");
+
+                const holdId = hold.holdID ?? "";
+                const userId = hold.userID ?? "";
+                const titleId = hold.titleID ?? "";
+                const copyId = hold.copyID ?? "—";
+                const status = hold.status ?? "";
+                const position = hold.position ?? 0;
+
+                const placedDate = formatDateTime(hold.placedAt || hold.placedat);
+                const readyDate = formatDateTime(hold.readyAt || hold.readyat);
+                const pickupExpire = formatDateTime(hold.pickupExpire || hold.pickupexpire);
+
+                const statusClass = getStatusClass(status);
+
+                // Generate action buttons based on status
+                const actionsHtml = generateActionButtons(hold);
+
+                tr.innerHTML = `
+                    <td>${holdId}</td>
+                    <td>${userId}</td>
+                    <td>${titleId}</td>
+                    <td>${copyId}</td>
+                    <td class="${statusClass}">${status}</td>
+                    <td>${position}</td>
+                    <td>${placedDate}</td>
+                    <td>${readyDate}</td>
+                    <td>${pickupExpire}</td>
+                    <td>${actionsHtml}</td>
+                `;
+
+                tbody.appendChild(tr);
+            }
+
+        } catch (err) {
+            console.error("Unexpected error while loading holds:", err);
+            messageEl.textContent = "Unexpected error while loading holds.";
+            messageEl.classList.add("error");
+        }
+    }
+
+    function applyHoldFilters(holds) {
+        const filterHoldId = document.getElementById("filterHoldId").value;
+        const filterUserId = document.getElementById("filterUserId").value;
+        const filterTitleId = document.getElementById("filterTitleId").value;
+        const filterCopyId = document.getElementById("filterCopyId").value;
+        const filterStatus = document.getElementById("filterStatus").value;
+
+        return holds.filter(hold => {
+            if (filterHoldId && hold.holdID !== parseInt(filterHoldId)) return false;
+            if (filterUserId && hold.userID !== parseInt(filterUserId)) return false;
+            if (filterTitleId && hold.titleID !== parseInt(filterTitleId)) return false;
+            if (filterCopyId && hold.copyID !== parseInt(filterCopyId)) return false;
+            if (filterStatus && hold.status !== filterStatus) return false;
+            return true;
+        });
+    }
+
+    function getStatusClass(status) {
+        switch (status) {
+            case "QUEUED": return "status-pending";
+            case "READY": return "status-ready";
+            case "EXPIRED": return "status-expired";
+            case "CANCELLED": return "status-cancelled";
+            default: return "";
+        }
+    }
+
+    function generateActionButtons(hold) {
+        const buttons = [];
+        
+        // Mark as Ready (for QUEUED holds)
+        if (hold.status === "QUEUED") {
+            buttons.push(`<button class="btn-action ready" data-action="ready" data-hold-id="${hold.holdID}">Mark Ready</button>`);
+        }
+        
+        // Cancel Hold (for QUEUED or READY holds)
+        if (hold.status === "QUEUED" || hold.status === "READY") {
+            buttons.push(`<button class="btn-action cancel" data-action="cancel" data-hold-id="${hold.holdID}">Cancel</button>`);
+        }
+        
+        // Mark as Expired (for READY holds)
+        if (hold.status === "READY") {
+            buttons.push(`<button class="btn-action expire" data-action="expire" data-hold-id="${hold.holdID}">Mark Expired</button>`);
+        }
+        
+        return buttons.join(" ") || "—";
+    }
+
+    // Filter form submit handler
+    document.getElementById("holdsFilterForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await loadAllHolds(true);
+    });
+
+    // Clear filters button handler
+    document.getElementById("clearFiltersBtn").addEventListener("click", async () => {
+        document.getElementById("holdsFilterForm").reset();
+        await loadAllHolds(false);
+    });
+
+    // Actions handler (delegated)
+    document.getElementById("holdsTableBody").addEventListener("click", async (e) => {
+        const btn = e.target;
+        if (!btn.classList.contains("btn-action")) return;
+
+        const action = btn.getAttribute("data-action");
+        const holdId = btn.getAttribute("data-hold-id");
+
+        if (!holdId) return;
+
+        const messageEl = document.getElementById("holdsMessage");
+        messageEl.textContent = "";
+        messageEl.className = "message info";
+
+        try {
+            let endpoint = "";
+            let method = "POST";
+            let confirmMsg = "";
+
+            switch (action) {
+                case "ready":
+                    // Mark hold as ready for pickup
+                    endpoint = `/api/holds/${holdId}/ready`;
+                    confirmMsg = "Mark this hold as ready for pickup?";
+                    break;
+                case "cancel":
+                    // Cancel hold
+                    endpoint = `/api/holds/${holdId}`;
+                    method = "DELETE";
+                    confirmMsg = "Cancel this hold?";
+                    break;
+                case "expire":
+                    // Mark hold as expired
+                    endpoint = `/api/holds/${holdId}/expire`;
+                    confirmMsg = "Mark this hold as expired?";
+                    break;
+                default:
+                    return;
+            }
+
+            if (confirmMsg && !confirm(confirmMsg)) {
+                return;
+            }
+
+            const resp = await fetch(endpoint, { method });
+
+            if (!resp.ok && resp.status !== 204) {
+                const errorText = await resp.text();
+                messageEl.textContent = `Failed to ${action} hold ${holdId}: ${errorText || 'HTTP ' + resp.status}`;
+                messageEl.classList.add("error");
+                return;
+            }
+
+            messageEl.textContent = `Hold ${holdId} ${action === "cancel" ? "cancelled" : action === "ready" ? "marked as ready" : "marked as expired"} successfully.`;
+            messageEl.classList.remove("error");
+            messageEl.classList.add("info");
+
+            // Reload with current filter state
+            const hasFilters = document.getElementById("filterHoldId").value || 
+                             document.getElementById("filterUserId").value ||
+                             document.getElementById("filterStatus").value;
+            await loadAllHolds(hasFilters);
+
+        } catch (err) {
+            console.error(err);
+            messageEl.textContent = "Unexpected error while processing hold.";
+            messageEl.classList.add("error");
+        }
+    });
+
+    // Utility function
+    function formatDateTime(value) {
+        if (!value) return "—";
+        try {
+            const d = new Date(value);
+            if (isNaN(d.getTime())) return value;
+            return d.toLocaleString();
+        } catch (e) {
+            return value;
+        }
+    }
+</script>
+
+</body>
+</html>

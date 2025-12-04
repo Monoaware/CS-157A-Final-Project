@@ -23,6 +23,18 @@ public class HoldController {
         this.authUtils = authUtils;
     }
 
+    // GET /api/holds
+    // Get all holds (STAFF ONLY).
+    @GetMapping
+    @ResponseBody
+    public ResponseEntity<List<Hold>> getAllHolds(HttpServletRequest request) {
+        int requestorID = getRequestorId(request);
+        authUtils.validateStaffAccess(requestorID);
+        
+        List<Hold> holds = holdService.getAllHolds(requestorID);
+        return ResponseEntity.ok(holds);
+    }
+
     // POST /api/holds/{titleID}
     // Place hold on a title (MEMBERS ONLY - staff cannot place holds).
     @PostMapping("/{titleID}")
@@ -151,6 +163,36 @@ public class HoldController {
 
         boolean can = holdService.canPlaceHold(titleID, requestorID, requestorID);
         return ResponseEntity.ok(can);
+    }
+
+    // POST /api/holds/{holdID}/ready
+    // Mark hold as ready for pickup (STAFF ONLY).
+    @PostMapping("/{holdID}/ready")
+    @ResponseBody
+    public ResponseEntity<Hold> markHoldReady(
+            @PathVariable int holdID,
+            HttpServletRequest request) {
+
+        int requestorID = getRequestorId(request);
+        authUtils.validateStaffAccess(requestorID);
+
+        Hold updated = holdService.markHoldReady(holdID, requestorID);
+        return ResponseEntity.ok(updated);
+    }
+
+    // POST /api/holds/{holdID}/expire
+    // Mark hold as expired (STAFF ONLY).
+    @PostMapping("/{holdID}/expire")
+    @ResponseBody
+    public ResponseEntity<Hold> markHoldExpired(
+            @PathVariable int holdID,
+            HttpServletRequest request) {
+
+        int requestorID = getRequestorId(request);
+        authUtils.validateStaffAccess(requestorID);
+
+        Hold updated = holdService.markHoldExpired(holdID, requestorID);
+        return ResponseEntity.ok(updated);
     }
 
     private int getRequestorId(HttpServletRequest req) {

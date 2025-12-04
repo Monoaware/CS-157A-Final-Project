@@ -55,4 +55,15 @@ public class HomeController {
         return "users"; 
     }
 
+    @GetMapping("/holds")
+    public String holdsPage(HttpServletRequest request, Model model) {
+        Integer userId = (Integer) request.getSession().getAttribute("USER_ID");
+        if (userId == null) {
+            return "redirect:/";
+        }
+
+        model.addAttribute("userId", userId);
+        return "holds";
+    }
+
 }
