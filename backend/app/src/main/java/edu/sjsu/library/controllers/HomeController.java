@@ -66,4 +66,15 @@ public class HomeController {
         return "holds";
     }
 
+    @GetMapping("/manage-fines")
+    public String manageFinesPage(HttpServletRequest request, Model model) {
+        Integer userId = (Integer) request.getSession().getAttribute("USER_ID");
+        if (userId == null) {
+            return "redirect:/";
+        }
+
+        model.addAttribute("userId", userId);
+        return "manage-fines";
+    }
+
 }
