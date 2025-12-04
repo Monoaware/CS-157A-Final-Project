@@ -22,11 +22,18 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-sizing: border-box;
         }
 
         header h1 {
             margin: 0;
             font-size: 22px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .back-btn {
@@ -37,17 +44,39 @@
             padding: 6px 12px;
             border-radius: 5px;
         }
+
         .back-btn:hover {
             background: rgba(255,255,255,0.2);
         }
 
+        .logout-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            background: #e74c3c;
+            color: white;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 500px;
+            margin-top: 30px;
+            padding: 0 20px;
+        }
+
         .container {
-            margin-top: 40px;
             background: white;
             padding: 25px 30px;
-            width: 400px;
             border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
 
         h2 {
@@ -107,12 +136,16 @@
 <body>
 
 <header>
-    <h1>Your Profile</h1>
-    <a href="/dashboard" class="back-btn">← Back to Dashboard</a>
+    <h1>User Profile</h1>
+    <div class="header-right">
+        <a href="/dashboard" class="back-btn">← Back to Dashboard</a>
+        <button class="logout-btn" id="logoutButton">Logout</button>
+    </div>
 </header>
 
-<div class="container">
-    <h2>Account Details</h2>
+<main>
+    <div class="container">
+        <h2>Account Details</h2>
 
     <form id="profileForm">
 
@@ -135,11 +168,20 @@
 
         <div id="statusMessage" class="status-box"></div>
     </form>
-</div>
+    </div>
+</main>
 
 
 <script>
     let currentUserId = null;
+
+    // Logout
+    document.getElementById("logoutButton").addEventListener("click", async () => {
+        try {
+            await fetch("/api/auth/logout", { method: "POST" });
+        } catch (e) {}
+        window.location.href = "/";
+    });
 
     // Fetch current user data from /api/users/me
     async function loadProfile() {
