@@ -7,7 +7,7 @@ public class Hold {
     private int holdID;
     private int userID;
     private int titleID;
-    private int copyID;
+    private Integer copyID;
     public enum HoldStatus {
         QUEUED,
         READY,
@@ -24,7 +24,7 @@ public class Hold {
     private static final int PICKUP_WINDOW_DAYS = 3; // Members have 3 days to pickup their copy after it's ready.
     
     // Constructor for new hold requests (database will assign ID, default status is QUEUED, default placedAt is time of constructor call, default readyAt & pickupExpire are NULL).
-    public Hold(int userID, int titleID, int copyID, int position) {
+    public Hold(int userID, int titleID, Integer copyID, int position) {
         this.userID = userID;
         this.titleID = titleID;
         this.copyID = copyID;
@@ -36,7 +36,7 @@ public class Hold {
     }
 
     // Constructor for existing hold requests (loaded from database).
-    public Hold(int holdID, int userID, int titleID, int copyID, HoldStatus status, LocalDateTime placedAt, LocalDateTime readyAt, LocalDateTime pickupExpire, int position) {
+    public Hold(int holdID, int userID, int titleID, Integer copyID, HoldStatus status, LocalDateTime placedAt, LocalDateTime readyAt, LocalDateTime pickupExpire, int position) {
         this.holdID = holdID;
         this.userID = userID;
         this.titleID = titleID;
@@ -51,7 +51,7 @@ public class Hold {
     // Getters:
     public int getUserID() { return userID;}
     public int getTitleID() { return titleID; }
-    public int getCopyID() { return copyID; }
+    public Integer getCopyID() { return copyID; }
     public int getHoldID() { return holdID; }
     public HoldStatus getStatus() { return status; }
     public LocalDateTime getPlacedAt() { return placedAt; }
@@ -61,7 +61,7 @@ public class Hold {
 
     // Setters: 
     public void setPosition(int position) { this.position = position; }
-    public void setCopyID(int copyID) { this.copyID = copyID; }
+    public void setCopyID(Integer copyID) { this.copyID = copyID; }
     public void setUserID(int userID) { this.userID = userID; }
     public void setTitleID(int titleID) { this.titleID = titleID; }
     public void setStatus(HoldStatus status) { this.status = status; }

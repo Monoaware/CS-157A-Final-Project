@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS holds (
     id SERIAL PRIMARY KEY,
     userid INTEGER NOT NULL REFERENCES users(id),
     titleid INTEGER NOT NULL REFERENCES titles(id),
-    copyid INTEGER NOT NULL REFERENCES copies(copyid),
+    copyid INTEGER REFERENCES copies(copyid),
     status VARCHAR(20) NOT NULL,
     placedat TIMESTAMP NOT NULL,
     readyat TIMESTAMP NULL,

@@ -236,6 +236,7 @@
                 <th>Status</th>
                 <th>Placed Date</th>
                 <th>Pickup Deadline</th>
+                <th>Position</th>
                 <th>Actions</th>
             </tr>
             </thead>
@@ -496,8 +497,8 @@
                 const holdId  = hold.holdID  ?? hold.holdId  ?? "";
                 const titleId = hold.titleID ?? hold.titleId ?? "";
                 const status  = hold.status  ?? "";
+                const position = hold.position ?? hold.queuePosition ?? ""; // 👈 ADD THIS
 
-                // 👇 try all likely property names
                 const placed = formatDateTime(
                     hold.placedAt   || hold.placedat   || hold.placedDate ||
                     hold.createdAt  || hold.holdDate
@@ -520,11 +521,13 @@
                     <td>${status}</td>
                     <td>${placed}</td>
                     <td>${pickupBy}</td>
-                    <td>${cancelButtonHtml}</td>
+                    <td>${position}</td>          <!-- 👈 NEW POSITION CELL -->
+                    <td>${cancelButtonHtml}</td>  <!-- 👈 ACTIONS CELL -->
                 `;
 
                 tbody.appendChild(tr);
             }
+
         } catch (err) {
             console.error(err);
             messageEl.textContent = "Unexpected error while loading holds.";

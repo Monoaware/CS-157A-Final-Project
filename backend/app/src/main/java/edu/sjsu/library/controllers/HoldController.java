@@ -145,12 +145,11 @@ public class HoldController {
     @ResponseBody
     public ResponseEntity<Boolean> canPlaceHold(
             @RequestParam int titleID,
-            @RequestParam int userID,
             HttpServletRequest request) {
 
         int requestorID = getRequestorId(request);
 
-        boolean can = holdService.canPlaceHold(titleID, userID, requestorID);
+        boolean can = holdService.canPlaceHold(titleID, requestorID, requestorID);
         return ResponseEntity.ok(can);
     }
 

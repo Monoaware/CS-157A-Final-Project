@@ -173,7 +173,6 @@
             </div>
             <div>
                 <span class="label">ISBN: </span>
-                <!-- adjust to title.isbn if needed -->
                 <span th:text="${title.ISBN}">1234567890</span>
             </div>
             <div>
@@ -216,6 +215,14 @@
             <!-- Filled by JS -->
             </tbody>
         </table>
+
+        <!-- Global Place Hold button (members only) -->
+        <div th:if="${!isStaff}" style="margin-top: 10px;">
+            <button id="holdButton" class="btn-primary">
+                Place Hold
+            </button>
+        </div>
+
         <div id="copiesMessage" class="message"></div>
     </div>
 </main>
@@ -224,8 +231,9 @@
     // Values from server
     const titleId = /*[[${title.titleID}]]*/ 0;
     const isStaff = /*[[${isStaff}]]*/ false;
-    // total available copies for this title
-    const availableCopies = /*[[${availability != null ? availability.availableCopies : 0}]]*/ 0;
+    const availableCopiesServer = /*[[${availability != null ? availability.availableCopies : 0}]]*/ 0;
+    const userId = /*[[${userID}]]*/ 0;
+    const totalCopies = Number(/*[[${availability != null ? availability.totalCopies : 0}]]*/ 0);
 
     document.getElementById("logoutButton").addEventListener("click", async () => {
         try {
@@ -270,8 +278,17 @@
                 const tr = document.createElement("tr");
                 tr.innerHTML = `<td colspan="6" class="message">No copies found for this title.</td>`;
                 tbody.appendChild(tr);
+
+                // If there are no copies, hold button should be enabled (you might want to disable instead; up to you)
+                const holdBtn = document.getElementById("holdButton");
+                if (holdBtn) {
+                    holdBtn.disabled = false;
+                    holdBtn.title = "";
+                }
                 return;
             }
+
+            let anyAvailable = false;
 
             copies.forEach(c => {
                 const tr = document.createElement("tr");
@@ -284,7 +301,11 @@
                 const isAvailable  = (status === "AVAILABLE");
                 const isCheckedOut = (status === "CHECKED_OUT");
 
-                // Decide what action button to show (members only)
+                if (isAvailable) {
+                    anyAvailable = true;
+                }
+
+                // Decide what action button to show (members only) – only checkout here
                 let actionHtml = "";
                 if (!isStaff) {
                     if (isAvailable) {
@@ -295,16 +316,7 @@
                                     data-barcode="${barcode}">
                                 Check Out
                             </button>`;
-                    } else if (isCheckedOut && availableCopies === 0) {
-                        // Only show HOLD when the title has 0 available copies
-                        actionHtml = `
-                            <button class="btn-primary btn-action"
-                                    data-action="hold"
-                                    data-title-id="${titleId}">
-                                Place Hold
-                            </button>`;
                     } else if (isCheckedOut) {
-                        // Checked out but some other copy is still available → no hold, just info
                         actionHtml = `
                             <button class="btn-primary" disabled>
                                 Checked Out
@@ -339,6 +351,22 @@
                 tbody.appendChild(tr);
             });
 
+            // Enable/disable global hold button based on availability
+            const holdBtn = document.getElementById("holdButton");
+            if (holdBtn) {
+                 if (anyAvailable) {
+                    holdBtn.disabled = true;
+                    holdBtn.title = "Holds can only be placed when no copies are available.";
+                }else if(!totalCopies) {
+                    holdBtn.disabled = true;
+                    holdBtn.title = "There are no available copies";
+                }
+                else{
+                    holdBtn.disabled = false;
+                    holdBtn.title = "";
+                }
+            }
+
         } catch (err) {
             console.error("Unexpected error in loadCopies:", err);
             msgBox.textContent = "Unexpected error while loading copies.";
@@ -346,7 +374,7 @@
         }
     }
 
-    // Handle both checkout and hold actions
+    // Handle checkout actions from the table
     document.getElementById("copiesTableBody").addEventListener("click", async (e) => {
         const btn = e.target.closest(".btn-action");
         if (!btn) return;
@@ -374,33 +402,73 @@
 
                 msgBox.textContent = "Copy checked out successfully!";
                 msgBox.classList.add("success");
-            } else if (action === "hold") {
-                // Place a hold on this title (members only)
-                const res = await fetch(`/api/holds/${titleId}`, {
-                    method: "POST"
-                });
 
-                if (!res.ok) {
-                    msgBox.textContent = "Failed to place hold (only members can place holds, or you may already have a hold).";
-                    msgBox.classList.add("error");
-                    console.error("Hold failed:", res.status, res.statusText);
-                    return;
-                }
-
-                msgBox.textContent = "Hold placed successfully!";
-                msgBox.classList.add("success");
+                // Refresh list to update statuses / buttons
+                await loadCopies();
             }
-
-            // Refresh list to update statuses / buttons
-            await loadCopies();
-
         } catch (err) {
-            console.error("Error during action:", err);
+            console.error("Error during checkout:", err);
             msgBox.textContent = "Network error while performing action.";
             msgBox.classList.add("error");
         }
     });
 
+    // Global hold button logic
+    const holdBtn = document.getElementById("holdButton");
+    if (holdBtn) {
+        holdBtn.addEventListener("click", async () => {
+            const msgBox = document.getElementById("copiesMessage");
+            msgBox.textContent = "";
+            msgBox.className = "message";
+
+            try {
+                // 1) Check if user can place a hold
+                const canRes = await fetch(`/api/holds/canPlace?titleID=${titleId}&userID=${userId}`, {
+                    method: "GET"
+                });
+
+                if (!canRes.ok) {
+                    msgBox.textContent = "Failed to check if you can place a hold.";
+                    msgBox.classList.add("error");
+                    console.error("canPlaceHold failed:", canRes.status, canRes.statusText);
+                    return;
+                }
+
+                const canPlace = await canRes.json();
+
+                if (!canPlace) {
+                    msgBox.textContent = "You cannot place a hold on this title (maybe you already have one or are not a member).";
+                    msgBox.classList.add("error");
+                    return;
+                }
+
+                // 2) Actually place the hold
+                const res1 = await fetch(`/api/holds/${titleId}`, {
+                    method: "POST"
+                });
+
+                if (!res1.ok) {
+                    msgBox.textContent = "Failed to place hold (only members can place holds, or you may already have a hold).";
+                    msgBox.classList.add("error");
+                    console.error("Hold failed:", res1.status, res1.statusText);
+                    return;
+                }
+
+                msgBox.textContent = "Hold placed successfully!";
+                msgBox.classList.add("success");
+
+                // Refresh list (not strictly necessary for holds, but keeps UI consistent)
+                await loadCopies();
+
+            } catch (err) {
+                console.error("Error placing hold:", err);
+                msgBox.textContent = "Network error while placing hold.";
+                msgBox.classList.add("error");
+            }
+        });
+    }
+
+    // Initial load
     loadCopies();
 </script>
 

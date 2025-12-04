@@ -88,7 +88,7 @@ public class HoldService {
         
         // Create the hold with next position in queue.
         int position = holdDAO.getNextPosition(titleID);
-        Hold newHold = new Hold(requestorID, titleID, -1, position); // -1 b/c copyID not assigned yet.
+        Hold newHold = new Hold(requestorID, titleID, (Integer) null, position); // -1 b/c copyID not assigned yet.
         
         // Insert and return with generated ID.
         int holdID = holdDAO.insert(newHold);
@@ -197,7 +197,7 @@ public class HoldService {
         // Iterate over list of expired holds and change the COPY status to available.
         for (Hold expiredHold : expiredHolds) {
             // Mark copy as available again.
-            if (expiredHold.getCopyID() != -1 && expiredHold.getCopyID() != 0) {
+            if (expiredHold.getCopyID() != (Integer) null && expiredHold.getCopyID() != 0) {
                 Copy copy = copyDAO.findById(expiredHold.getCopyID());
                 if (copy != null && copy.getStatus() == Copy.CopyStatus.RESERVED) {
                     copy.markAvailable();
