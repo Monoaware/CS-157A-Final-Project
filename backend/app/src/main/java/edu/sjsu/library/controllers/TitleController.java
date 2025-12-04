@@ -45,6 +45,7 @@ public class TitleController {
     // List all titles with optional filters.
     @GetMapping
     public String listTitles(
+            @RequestParam(required = false) String title,
             @RequestParam(required = false) String author,
             @RequestParam(required = false) String genre,
             @RequestParam(required = false) Integer startYear,
@@ -59,7 +60,9 @@ public class TitleController {
         List<Title> titles;
         
         // Apply filters based on request parameters.
-        if (author != null && !author.isEmpty()) {
+        if (title != null && !title.isEmpty()) {
+            titles = bookService.searchByTitle(title, requestorID);
+        } else if (author != null && !author.isEmpty()) {
             titles = bookService.searchByAuthor(author, requestorID);
         } else if (genre != null && !genre.isEmpty()) {
             try {

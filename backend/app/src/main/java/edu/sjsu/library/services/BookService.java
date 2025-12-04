@@ -172,6 +172,25 @@ public class BookService {
         }
     }
 
+    // Search titles by title name (STAFF & MEMBERS can use this).
+    public List<Title> searchByTitle(String title, int requestorID) {
+        
+        // Confirm user is authenticated and get user details.
+        User requestor = authUtils.getRequestor(requestorID);
+        
+        // Find by title.
+        List<Title> titles = titleDAO.findByTitle(title);
+        
+        // Filter view by role.
+        if (requestor.isStaff()) {
+            return titles; 
+        } else {
+            return titles.stream()
+                    .filter(Title::isVisible)
+                    .collect(Collectors.toList());
+        }
+    }
+
     // 7. Search titles by genre (STAFF & MEMBERS can use this)
     public List<Title> searchByGenre(Title.Genre genre, int requestorID) {
 

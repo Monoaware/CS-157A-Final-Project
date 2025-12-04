@@ -3,16 +3,12 @@ package edu.sjsu.library.dao;
 import edu.sjsu.library.models.Title;
 import edu.sjsu.library.models.Title.Genre;
 
-import java.sql.PreparedStatement;
 import java.time.Year;
-
+import java.util.List;
 
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
-import java.util.List;
 
 
 @Repository
@@ -139,6 +135,22 @@ public class TitleDAO {
                 rs.getBoolean("isvisible")
             ),
             genre.toString()
+        );
+    }
+
+    public List<Title> findByTitle(String title) {
+        return jdbc.query(
+            "SELECT id, isbn, title, author, yearpublished, genre, isvisible FROM titles WHERE LOWER(title) LIKE LOWER(?) ORDER BY title",
+            (rs, n) -> new Title(
+                rs.getInt("id"),
+                rs.getString("isbn"),
+                rs.getString("title"),
+                rs.getString("author"),
+                Year.of(rs.getInt("yearpublished")),
+                Genre.valueOf(rs.getString("genre").trim().toUpperCase()),
+                rs.getBoolean("isvisible")
+            ),
+            "%" + title + "%"
         );
     }
 
