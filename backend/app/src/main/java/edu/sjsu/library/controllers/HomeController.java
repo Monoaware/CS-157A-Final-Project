@@ -39,12 +39,6 @@ public class HomeController {
         return "profile"; 
     }
 
-    @GetMapping("/holds")
-    public String holds(){
-        return "holds";
-    }
-
-
     @GetMapping("/loans")
     public String loansPage(HttpServletRequest request, Model model) {
         Integer userId = (Integer) request.getSession().getAttribute("USER_ID");

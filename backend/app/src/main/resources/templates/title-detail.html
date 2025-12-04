@@ -150,6 +150,9 @@
         .message.success {
             color: #27ae60;
         }
+        .message.info {
+            color: #7f8c8d;
+        }
     </style>
 </head>
 <body>
@@ -225,6 +228,28 @@
 
         <div id="copiesMessage" class="message"></div>
     </div>
+
+    <!-- Staff-only: holds for this title -->
+    <div class="card" th:if="${isStaff}">
+        <h2>Holds for This Title (Staff Only)</h2>
+        <p id="holdsMessage" class="message info">Loading holds...</p>
+        <table>
+            <thead>
+            <tr>
+                <th>Hold ID</th>
+                <th>User ID</th>
+                <th>Status</th>
+                <th>Position</th>
+                <th>Placed At</th>
+                <th>Ready At</th>
+                <th>Pickup Expire</th>
+            </tr>
+            </thead>
+            <tbody id="holdsTableBody">
+            <!-- Filled by JS for staff -->
+            </tbody>
+        </table>
+    </div>
 </main>
 
 <script th:inline="javascript">
@@ -232,7 +257,6 @@
     const titleId = /*[[${title.titleID}]]*/ 0;
     const isStaff = /*[[${isStaff}]]*/ false;
     const availableCopiesServer = /*[[${availability != null ? availability.availableCopies : 0}]]*/ 0;
-    const userId = /*[[${userID}]]*/ 0;
     const totalCopies = Number(/*[[${availability != null ? availability.totalCopies : 0}]]*/ 0);
 
     document.getElementById("logoutButton").addEventListener("click", async () => {
@@ -279,11 +303,10 @@
                 tr.innerHTML = `<td colspan="6" class="message">No copies found for this title.</td>`;
                 tbody.appendChild(tr);
 
-                // If there are no copies, hold button should be enabled (you might want to disable instead; up to you)
                 const holdBtn = document.getElementById("holdButton");
                 if (holdBtn) {
-                    holdBtn.disabled = false;
-                    holdBtn.title = "";
+                    holdBtn.disabled = true;
+                    holdBtn.title = "There are no copies in the system for this title.";
                 }
                 return;
             }
@@ -309,7 +332,6 @@
                 let actionHtml = "";
                 if (!isStaff) {
                     if (isAvailable) {
-                        // Normal checkout button when copy is available
                         actionHtml = `
                             <button class="btn-primary btn-action"
                                     data-action="checkout"
@@ -322,14 +344,12 @@
                                 Checked Out
                             </button>`;
                     } else {
-                        // Other statuses
                         actionHtml = `
                             <button class="btn-primary" disabled>
                                 Unavailable
                             </button>`;
                     }
                 } else {
-                    // Staff don't act here
                     actionHtml = `
                         <button class="btn-primary" disabled>
                             Members Only
@@ -354,14 +374,13 @@
             // Enable/disable global hold button based on availability
             const holdBtn = document.getElementById("holdButton");
             if (holdBtn) {
-                 if (anyAvailable) {
+                if (totalCopies === 0) {
                     holdBtn.disabled = true;
-                    holdBtn.title = "Holds can only be placed when no copies are available.";
-                }else if(!totalCopies) {
+                    holdBtn.title = "There are no copies in the system for this title.";
+                } else if (anyAvailable) {
                     holdBtn.disabled = true;
-                    holdBtn.title = "There are no available copies";
-                }
-                else{
+                    holdBtn.title = "Holds can only be placed when all copies are checked out.";
+                } else {
                     holdBtn.disabled = false;
                     holdBtn.title = "";
                 }
@@ -370,6 +389,78 @@
         } catch (err) {
             console.error("Unexpected error in loadCopies:", err);
             msgBox.textContent = "Unexpected error while loading copies.";
+            msgBox.classList.add("error");
+        }
+    }
+
+    // Staff-only: load holds for this title
+    async function loadTitleHolds() {
+        const tbody = document.getElementById("holdsTableBody");
+        const msgBox = document.getElementById("holdsMessage");
+        if (!tbody || !msgBox) {
+            return; // Not a staff view
+        }
+
+        msgBox.textContent = "Loading holds...";
+        msgBox.className = "message info";
+        tbody.innerHTML = "";
+
+        try {
+            const res = await fetch(`/api/holds/title/${titleId}`, {
+                headers: { "Accept": "application/json" }
+            });
+
+            if (!res.ok) {
+                msgBox.textContent = `Failed to load holds (status ${res.status}).`;
+                msgBox.classList.add("error");
+                console.error("Holds request failed:", res.status, res.statusText);
+                return;
+            }
+
+            const holds = await res.json();
+
+            // Filter to "current" holds: QUEUED or READY
+            const activeHolds = Array.isArray(holds)
+                ? holds.filter(h => h.status === "QUEUED" || h.status === "READY")
+                : [];
+
+            if (activeHolds.length === 0) {
+                msgBox.textContent = "No current holds for this title.";
+                msgBox.classList.remove("error");
+                msgBox.classList.add("info");
+                return;
+            }
+
+            msgBox.textContent = "";
+            tbody.innerHTML = "";
+
+            activeHolds.forEach(h => {
+                const tr = document.createElement("tr");
+
+                const holdId   = h.holdID;
+                const userId   = h.userID;
+                const status   = h.status;
+                const position = h.position;
+                const placedAt = h.placedAt || "";
+                const readyAt  = h.readyAt || "";
+                const expire   = h.pickupExpire || "";
+
+                tr.innerHTML = `
+                    <td>${holdId}</td>
+                    <td>${userId}</td>
+                    <td>${status}</td>
+                    <td>${position}</td>
+                    <td>${placedAt}</td>
+                    <td>${readyAt}</td>
+                    <td>${expire}</td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+
+        } catch (err) {
+            console.error("Unexpected error while loading holds:", err);
+            msgBox.textContent = "Unexpected error while loading holds.";
             msgBox.classList.add("error");
         }
     }
@@ -403,8 +494,11 @@
                 msgBox.textContent = "Copy checked out successfully!";
                 msgBox.classList.add("success");
 
-                // Refresh list to update statuses / buttons
+                // Refresh copies (and holds, for staff)
                 await loadCopies();
+                if (isStaff) {
+                    await loadTitleHolds();
+                }
             }
         } catch (err) {
             console.error("Error during checkout:", err);
@@ -413,7 +507,7 @@
         }
     });
 
-    // Global hold button logic
+    // Global hold button logic (members only)
     const holdBtn = document.getElementById("holdButton");
     if (holdBtn) {
         holdBtn.addEventListener("click", async () => {
@@ -422,8 +516,8 @@
             msgBox.className = "message";
 
             try {
-                // 1) Check if user can place a hold
-                const canRes = await fetch(`/api/holds/canPlace?titleID=${titleId}&userID=${userId}`, {
+                // 1) Check if user can place a hold (session-based)
+                const canRes = await fetch(`/api/holds/canPlace?titleID=${titleId}`, {
                     method: "GET"
                 });
 
@@ -437,7 +531,7 @@
                 const canPlace = await canRes.json();
 
                 if (!canPlace) {
-                    msgBox.textContent = "You cannot place a hold on this title (maybe you already have one or are not a member).";
+                    msgBox.textContent = "You cannot place a hold on this title (maybe you already have one or there are available copies).";
                     msgBox.classList.add("error");
                     return;
                 }
@@ -457,8 +551,11 @@
                 msgBox.textContent = "Hold placed successfully!";
                 msgBox.classList.add("success");
 
-                // Refresh list (not strictly necessary for holds, but keeps UI consistent)
+                // Refresh copies; for staff, also refresh holds
                 await loadCopies();
+                if (isStaff) {
+                    await loadTitleHolds();
+                }
 
             } catch (err) {
                 console.error("Error placing hold:", err);
@@ -469,7 +566,12 @@
     }
 
     // Initial load
-    loadCopies();
+    (async () => {
+        await loadCopies();
+        if (isStaff) {
+            await loadTitleHolds();
+        }
+    })();
 </script>
 
 </body>
