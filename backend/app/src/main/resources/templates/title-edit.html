@@ -190,6 +190,11 @@
             flex-wrap: wrap;
         }
 
+        .copy-actions {
+            margin-top: 20px;
+            border-top: 1px solid #ecf0f1;
+            padding-top: 12px;
+        }
     </style>
 </head>
 <body>
@@ -210,6 +215,7 @@
         <p th:if="${error}" th:text="${error}" class="status-message error"></p>
         <p th:if="${success}" th:text="${success}" class="status-message success"></p>
 
+        <!-- Edit form -->
         <form th:if="${title != null}"
               th:action="@{/titles/{id}/edit(id=${title.titleID})}"
               method="post">
@@ -255,26 +261,39 @@
                 </div>
             </div>
 
-    <div class="form-row" style="flex-direction: column; align-items: flex-start;">
-        <label for="visible" style="font-weight: 600;">Visibility
-            <input id="visible" name="visible" type="checkbox" th:checked="${title.visible}">
+            <div class="form-row" style="flex-direction: column; align-items: flex-start;">
+                <label for="visible" style="font-weight: 600;">
+                    Visibility
+                    <input id="visible" name="visible" type="checkbox" th:checked="${title.visible}">
                 </label>
-    </div>
-
-
+            </div>
 
             <div class="actions-row">
                 <div>
                     <button type="submit" class="btn-primary">Save Changes</button>
                     <a th:href="@{/titles/{id}(id=${title.titleID})}" class="btn-secondary">Cancel</a>
                 </div>
-
-                <form th:action="@{/titles/{id}/delete(id=${title.titleID})}"
-                      method="POST"
-                      onsubmit="return confirm('Are you sure you want to delete this title? This cannot be undone.');">
-                    <button type="submit" class="btn-danger">Delete Title</button>
-                </form>
             </div>
+        </form>
+
+        <!-- Copy management (Add Copy button) -->
+        <div th:if="${title != null}" class="copy-actions">
+            <button id="addCopyButton"
+                    type="button"
+                    class="btn-primary"
+                    th:attr="data-title-id=${title.titleID}">
+                Add Copy
+            </button>
+            <p id="copyMessage" class="status-message info"></p>
+        </div>
+
+        <!-- Separate delete form (NOT nested) -->
+        <form th:if="${title != null}"
+              th:action="@{/titles/{id}/delete(id=${title.titleID})}"
+              method="POST"
+              style="margin-top: 15px;"
+              onsubmit="return confirm('Are you sure you want to delete this title? This cannot be undone.');">
+            <button type="submit" class="btn-danger">Delete Title</button>
         </form>
 
         <p th:if="${title == null}" class="status-message error">
@@ -284,7 +303,7 @@
 </main>
 
 <script>
-    // Optional logout behavior if you’ve wired /api/auth/logout like on other pages:
+    // Logout
     const logoutButton = document.getElementById("logoutButton");
     if (logoutButton) {
         logoutButton.addEventListener("click", async () => {
@@ -292,6 +311,60 @@
                 await fetch("/api/auth/logout", { method: "POST" });
             } catch (e) {}
             window.location.href = "/";
+        });
+    }
+
+    // Add Copy button logic (calls /api/copies)
+    const addCopyButton = document.getElementById("addCopyButton");
+    if (addCopyButton) {
+        addCopyButton.addEventListener("click", async () => {
+            const titleId = addCopyButton.getAttribute("data-title-id");
+            const msg = document.getElementById("copyMessage");
+            msg.textContent = "";
+            msg.className = "status-message info";
+
+            if (!titleId) {
+                msg.textContent = "Unable to determine title ID.";
+                msg.className = "status-message error";
+                return;
+            }
+
+            try {
+                // Minimal payload – adjust fields to match your Copy model if needed
+                const newCopyPayload = {
+                    titleID: Number(titleId),
+                    barcode: "AUTO-" + Date.now(),
+                    location: "MAIN",
+                    status: "AVAILABLE",
+                    // visible: true
+                };
+
+                const res = await fetch("/api/copies", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify(newCopyPayload)
+                });
+
+                if (!res.ok) {
+                    msg.textContent = `Failed to add copy (HTTP ${res.status}).`;
+                    msg.className = "status-message error";
+                    console.error("Add copy failed:", res.status, res.statusText);
+                    return;
+                }
+
+                const created = await res.json();
+                const copyId = created.copyID ?? created.copyId ?? "new";
+                msg.textContent = `Copy added successfully (Copy ID: ${copyId}).`;
+                msg.className = "status-message success";
+            } catch (err) {
+                console.error("Error while adding copy:", err);
+                const msg = document.getElementById("copyMessage");
+                msg.textContent = "Unexpected error while adding copy.";
+                msg.className = "status-message error";
+            }
         });
     }
 </script>

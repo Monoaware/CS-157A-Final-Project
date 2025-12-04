@@ -16,6 +16,10 @@ public class Copy {
     private String location;
     private boolean isVisible;
     
+    public Copy(){
+        
+    }
+
     // Constructor for new book copies (database will assign ID, and visibility is true by default).
     public Copy(int titleID, String barcode, CopyStatus status, String location) {
         this.titleID = titleID;
