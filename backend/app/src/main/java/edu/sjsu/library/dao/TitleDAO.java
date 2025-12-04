@@ -2,10 +2,15 @@ package edu.sjsu.library.dao;
 
 import edu.sjsu.library.models.Title;
 import edu.sjsu.library.models.Title.Genre;
+
+import java.sql.PreparedStatement;
 import java.time.Year;
+
 
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
@@ -137,8 +142,6 @@ public class TitleDAO {
         );
     }
 
-
-
     /** Insert and return generated id */
     public int insert(Title t) {
         String sql = """
@@ -157,6 +160,25 @@ public class TitleDAO {
         );
         return newId;
     }
+
+    // public int insert(Title t) {
+    //     String sql = "INSERT INTO titles (isbn, title, author, yearpublished, genre, isvisible) VALUES (?, ?, ?, ?, ?, ?)";
+    //     KeyHolder keyHolder = new GeneratedKeyHolder();
+    //     jdbc.update(con -> {
+    //         PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+    //         ps.setString(1, t.getISBN());
+    //         ps.setString(2, t.getTitle());
+    //         ps.setString(3, t.getAuthor());
+    //         ps.setInt(4, t.getYearPublished().getValue()); // pass int year
+    //         ps.setString(5, t.getGenre().toString());
+    //         ps.setBoolean(6, t.isVisible());
+    //         return ps;
+    //     }, keyHolder);
+
+    //     Number key = keyHolder.getKey();
+    //     if (key == null) throw new IllegalStateException("Failed to retrieve generated title id");
+    //     return key.intValue();
+    // }
 
     public int update(Title t) {
         String sql = """
