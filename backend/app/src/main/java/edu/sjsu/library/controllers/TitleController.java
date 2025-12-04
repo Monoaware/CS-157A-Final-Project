@@ -57,38 +57,51 @@ public class TitleController {
         int requestorID = getRequestorId(request);
         User requestor = userService.findById(requestorID);
         
-        // Debug logging
-        System.out.println("DEBUG - Title param: " + title);
-        System.out.println("DEBUG - Author param: " + author);
-        System.out.println("DEBUG - Genre param: " + genre);
-        System.out.println("DEBUG - Genre isBlank: " + (genre != null && genre.isBlank()));
+        // Start with all titles, then apply filters sequentially
+        List<Title> titles = bookService.getAllTitles(requestorID);
         
-        List<Title> titles;
-        
-        // Apply filters based on request parameters.
+        // Apply title filter if provided
         if (title != null && !title.isBlank()) {
-            titles = bookService.searchByTitle(title.trim(), requestorID);
-        } else if (author != null && !author.isBlank()) {
-            titles = bookService.searchByAuthor(author.trim(), requestorID);
-        } else if (genre != null && !genre.isBlank()) {
-            try {
-                Title.Genre genreEnum = Title.Genre.valueOf(genre.trim().toUpperCase().replace(" ", "_"));
-                titles = bookService.searchByGenre(genreEnum, requestorID);
-                System.out.println("DEBUG - Genre filter applied, found " + titles.size() + " titles");
-            } catch (IllegalArgumentException e) {
-                System.out.println("DEBUG - Genre parse error: " + e.getMessage());
-                model.addAttribute("error", "Invalid genre: " + genre);
-                titles = bookService.getAllTitles(requestorID);
-            }
-        } else if (startYear != null || endYear != null) {
-            Year start = startYear != null ? Year.of(startYear) : Year.of(1000);
-            Year end = endYear != null ? Year.of(endYear) : Year.now();
-            titles = bookService.searchByYearRange(start, end, requestorID);
-        } else {
-            titles = bookService.getAllTitles(requestorID);
+            final String searchTitle = title.trim().toLowerCase();
+            titles = titles.stream()
+                .filter(t -> t.getTitle().toLowerCase().contains(searchTitle))
+                .collect(java.util.stream.Collectors.toList());
         }
         
-        // Filter by availability if requested.
+        // Apply author filter if provided
+        if (author != null && !author.isBlank()) {
+            final String searchAuthor = author.trim().toLowerCase();
+            titles = titles.stream()
+                .filter(t -> t.getAuthor().toLowerCase().contains(searchAuthor))
+                .collect(java.util.stream.Collectors.toList());
+        }
+        
+        // Apply genre filter if provided
+        if (genre != null && !genre.isBlank()) {
+            try {
+                Title.Genre genreEnum = Title.Genre.valueOf(genre.trim().toUpperCase().replace(" ", "_"));
+                final Title.Genre targetGenre = genreEnum;
+                titles = titles.stream()
+                    .filter(t -> t.getGenre() == targetGenre)
+                    .collect(java.util.stream.Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                model.addAttribute("error", "Invalid genre: " + genre);
+            }
+        }
+        
+        // Apply year range filter if provided
+        if (startYear != null || endYear != null) {
+            final int start = startYear != null ? startYear : 1000;
+            final int end = endYear != null ? endYear : Year.now().getValue();
+            titles = titles.stream()
+                .filter(t -> {
+                    int year = t.getYearPublished().getValue();
+                    return year >= start && year <= end;
+                })
+                .collect(java.util.stream.Collectors.toList());
+        }
+        
+        // Filter by availability if requested
         if (availableOnly) {
             titles = bookService.filterTitlesByAvailability(titles, true, requestorID);
         }
