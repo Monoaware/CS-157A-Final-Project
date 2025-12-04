@@ -159,6 +159,17 @@ public class UserController {
         return success ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
     }
 
+    // 11. POST /api/users/{id}/restrict
+    // Restrict user account (STAFF only).
+    @PostMapping("/{id}/restrict")
+    public ResponseEntity<Void> restrictUser(@PathVariable int id, HttpServletRequest request) {
+        int requestorID = getRequestorId(request);
+        authUtils.validateStaffAccess(requestorID);
+        
+        boolean success = userService.restrictUser(id, requestorID);
+        return success ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
     // Helper: Apply filters to user list (email, role, status).
     private List<User> applyFilters(List<User> users, String email, String role, String status) {
         // Filter by email (exact or partial match).

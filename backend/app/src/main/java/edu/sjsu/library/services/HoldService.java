@@ -302,7 +302,7 @@ public class HoldService {
     }
 
     // 11. Mark hold as ready (STAFF only).
-    public Hold markHoldReady(int holdID, int requestorID) {
+    public Hold markHoldReady(int holdID, int copyID, int requestorID) {
         authUtils.validateStaffAccess(requestorID);
         
         Hold hold = holdDAO.findById(holdID);
@@ -314,6 +314,26 @@ public class HoldService {
             throw new IllegalArgumentException("Only queued holds can be marked as ready.");
         }
         
+        // Verify copy exists and is available
+        Copy copy = copyDAO.findById(copyID);
+        if (copy == null) {
+            throw new IllegalArgumentException("Copy not found with ID: " + copyID);
+        }
+        if (copy.getStatus() != Copy.CopyStatus.AVAILABLE) {
+            throw new IllegalArgumentException("Copy is not available for hold processing.");
+        }
+        
+        // Verify copy is for the same title as the hold
+        if (copy.getTitleID() != hold.getTitleID()) {
+            throw new IllegalArgumentException("Copy does not match the title for this hold.");
+        }
+        
+        // Mark copy as reserved
+        copy.markReserved();
+        copyDAO.update(copy);
+        
+        // Mark hold as ready
+        hold.setCopyID(copyID);
         hold.markReady(LocalDateTime.now());
         holdDAO.update(hold);
         

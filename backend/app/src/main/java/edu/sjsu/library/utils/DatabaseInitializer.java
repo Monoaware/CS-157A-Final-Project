@@ -1,14 +1,15 @@
 package edu.sjsu.library.utils;
 
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Configuration;
+// import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 
-@Configuration
+// @Configuration - COMMENTED OUT to prevent database reset on every startup
+// Uncomment @Configuration and restart the server ONCE if you need to reset the database
 public class DatabaseInitializer implements CommandLineRunner {
 
     private final DataSource dataSource;

@@ -526,9 +526,15 @@
 
             switch (action) {
                 case "ready":
-                    // Mark hold as ready for pickup
-                    endpoint = `/api/holds/${holdId}/ready`;
-                    confirmMsg = "Mark this hold as ready for pickup?";
+                    // Mark hold as ready for pickup - requires copyID
+                    const copyID = prompt("Enter the Copy ID for this hold:");
+                    if (!copyID || isNaN(copyID)) {
+                        messageEl.textContent = "Invalid or missing Copy ID.";
+                        messageEl.classList.add("error");
+                        return;
+                    }
+                    endpoint = `/api/holds/${holdId}/ready?copyID=${copyID}`;
+                    confirmMsg = `Mark this hold as ready for pickup with Copy ID ${copyID}?`;
                     break;
                 case "cancel":
                     // Cancel hold

@@ -253,8 +253,12 @@
                     <input id="editEmail" type="email" required>
                 </div>
                 <div>
-                    <label for="editStatus">Status (e.g. ACTIVE, INACTIVE)</label>
-                    <input id="editStatus" type="text">
+                    <label for="editStatus">Status</label>
+                    <select id="editStatus">
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                        <option value="RESTRICTED">RESTRICTED</option>
+                    </select>
                 </div>
             </div>
 
@@ -292,7 +296,12 @@
                 </div>
                 <div>
                     <label for="filterStatus">Status</label>
-                    <input id="filterStatus" type="text" placeholder="e.g. ACTIVE, INACTIVE">
+                    <select id="filterStatus">
+                        <option value="">Any</option>
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                        <option value="RESTRICTED">RESTRICTED</option>
+                    </select>
                 </div>
             </div>
 
@@ -500,7 +509,7 @@ document.getElementById("editUserForm").addEventListener("submit", async (e) => 
     const fname = document.getElementById("editFname").value;
     const lname = document.getElementById("editLname").value;
     const email = document.getElementById("editEmail").value;
-    const status = document.getElementById("editStatus").value.trim().toUpperCase();
+    const status = document.getElementById("editStatus").value;
 
     const errBox = document.getElementById("editUserError");
     const okBox = document.getElementById("editUserSuccess");
@@ -508,25 +517,39 @@ document.getElementById("editUserForm").addEventListener("submit", async (e) => 
     okBox.textContent = "";
 
     try {
-        let res;
+        let statusRes;
 
+        // Update status first if changed
         if (status === "ACTIVE") {
-            res = await fetch(`/api/users/${id}/activate`, {
+            statusRes = await fetch(`/api/users/${id}/activate`, {
                 method: "POST"
             });
+            if (!statusRes.ok) {
+                errBox.textContent = "Failed to activate user.";
+                return;
+            }
         } 
         else if (status === "INACTIVE") {
-            res = await fetch(`/api/users/${id}/deactivate`, {
+            statusRes = await fetch(`/api/users/${id}/deactivate`, {
                 method: "POST"
             });
+            if (!statusRes.ok) {
+                errBox.textContent = "Failed to deactivate user.";
+                return;
+            }
         }
-        else if (status.length > 0) {
-            errBox.textContent = "Status must be ACTIVE or INACTIVE.";
-            return;
+        else if (status === "RESTRICTED") {
+            statusRes = await fetch(`/api/users/${id}/restrict`, {
+                method: "POST"
+            });
+            if (!statusRes.ok) {
+                errBox.textContent = "Failed to restrict user.";
+                return;
+            }
         }
 
-
-        res = await fetch(`/api/users/${id}`, {
+        // Update user details
+        const res = await fetch(`/api/users/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -537,7 +560,7 @@ document.getElementById("editUserForm").addEventListener("submit", async (e) => 
         });
 
         if (!res.ok) {
-            errBox.textContent = "Failed to update user.";
+            errBox.textContent = "Failed to update user details.";
             return;
         }
 

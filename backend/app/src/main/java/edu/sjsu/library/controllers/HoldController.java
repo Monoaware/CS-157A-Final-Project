@@ -171,12 +171,13 @@ public class HoldController {
     @ResponseBody
     public ResponseEntity<Hold> markHoldReady(
             @PathVariable int holdID,
+            @RequestParam int copyID,
             HttpServletRequest request) {
 
         int requestorID = getRequestorId(request);
         authUtils.validateStaffAccess(requestorID);
 
-        Hold updated = holdService.markHoldReady(holdID, requestorID);
+        Hold updated = holdService.markHoldReady(holdID, copyID, requestorID);
         return ResponseEntity.ok(updated);
     }
 

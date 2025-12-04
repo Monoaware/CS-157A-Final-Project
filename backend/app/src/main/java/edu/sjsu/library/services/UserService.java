@@ -61,9 +61,8 @@ public class UserService {
         if (user == null || !BCrypt.checkpw(rawPassword, user.getPasswordHash())) {
             throw new AuthenticationFailedException("Authentication failed: invalid credentials.");
         }
-        if (!user.isActive()) {
-            throw new AuthenticationFailedException("Authentication failed: please see library staff to reactivate your account.");
-        }
+        // Allow login for all user statuses (ACTIVE, INACTIVE, RESTRICTED)
+        // Functional restrictions are enforced by business logic based on status
         return user;
     }
 
@@ -240,6 +239,22 @@ public class UserService {
         }
 
         user.deactivate();
+        userDao.update(user);
+        return true;
+    }
+
+    // 14. Restrict user account (STAFF only).
+    @Transactional
+    public boolean restrictUser(int userID, int requestorID) {
+        // Verify staff authorization
+        authUtils.validateStaffAccess(requestorID);
+
+        User user = userDao.findById(userID);
+        if (user == null) {
+            return false;
+        }
+
+        user.restrict();
         userDao.update(user);
         return true;
     }
