@@ -279,6 +279,7 @@
                 <th>Due Date</th>
                 <th>Return Date</th>
                 <th>Renew Count</th>
+                <th>Actions</th>
             </tr>
             </thead>
             <tbody id="allLoansTableBody"></tbody>
@@ -514,6 +515,14 @@
                 const checkoutDate = formatDateTime(loan.checkoutDate);
                 const dueDate = formatDateTime(loan.dueDate);
                 const returnDate = loan.returnDate ? formatDateTime(loan.returnDate) : "";
+                
+                // Check if loan is active (not returned) - explicitly check for null/undefined/empty
+                const isActive = (loan.returnDate === null || loan.returnDate === undefined || loan.returnDate === "");
+
+                // Staff can renew any active loan (even if max renewals reached)
+                const renewButtonHtml = isActive
+                    ? `<button class="btn-renew" data-loan-id="${loan.loanID}" data-staff-renew="true">Renew</button>`
+                    : "";
 
                 tr.innerHTML = `
                     <td>${loan.loanID}</td>
@@ -523,6 +532,7 @@
                     <td>${dueDate}</td>
                     <td>${returnDate}</td>
                     <td>${loan.renewCount}</td>
+                    <td>${renewButtonHtml}</td>
                 `;
 
                 tbody.appendChild(tr);
@@ -599,6 +609,48 @@
     document.getElementById("clearFiltersBtn")?.addEventListener("click", async () => {
         document.getElementById("allLoansFilterForm").reset();
         await loadAllLoansForStaff(false);
+    });
+
+    // Staff renew button handler (delegated) for All Loans table
+    document.getElementById("allLoansTableBody").addEventListener("click", async (e) => {
+        const btn = e.target;
+        if (!btn.classList.contains("btn-renew")) return;
+
+        const loanId = btn.getAttribute("data-loan-id");
+        const isStaffRenew = btn.getAttribute("data-staff-renew") === "true";
+        
+        if (!loanId) return;
+
+        const messageEl = document.getElementById("allLoansMessage");
+        messageEl.textContent = "";
+        messageEl.className = "message info";
+
+        try {
+            const resp = await fetch(`/api/loans/renew/${loanId}`, {
+                method: "POST"
+            });
+
+            if (!resp.ok) {
+                const errorText = await resp.text();
+                messageEl.textContent = `Failed to renew loan ${loanId}: ${errorText || 'HTTP ' + resp.status}`;
+                messageEl.classList.add("error");
+                return;
+            }
+
+            messageEl.textContent = `Loan ${loanId} renewed successfully.`;
+            messageEl.classList.remove("error");
+            messageEl.classList.add("info");
+
+            // Reload with current filter state
+            const hasFilters = document.getElementById("filterLoanId").value || 
+                             document.getElementById("filterUserId").value ||
+                             document.getElementById("filterActiveOnly").checked;
+            await loadAllLoansForStaff(hasFilters);
+        } catch (err) {
+            console.error(err);
+            messageEl.textContent = "Unexpected error while renewing loan.";
+            messageEl.classList.add("error");
+        }
     });
 
     // ====== HOLDS (member-style view) ======
