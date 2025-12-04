@@ -6,8 +6,10 @@ package edu.sjsu.library.services;
 // Adding dependencies...
 import edu.sjsu.library.dao.FineDAO;
 import edu.sjsu.library.dao.UserDAO;
+import edu.sjsu.library.dao.BookRecordDAO;
 import edu.sjsu.library.models.Fine;
 import edu.sjsu.library.models.User;
+import edu.sjsu.library.models.BookRecord;
 import edu.sjsu.library.exceptions.AuthorizationFailedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,11 +25,13 @@ import java.util.List;
 public class FineService {
     private final FineDAO fineDAO;
     private final UserDAO userDAO;
+    private final BookRecordDAO bookRecordDAO;
 
     // Constructor:
-    public FineService(FineDAO fineDAO, UserDAO userDAO) {
+    public FineService(FineDAO fineDAO, UserDAO userDAO, BookRecordDAO bookRecordDAO) {
         this.fineDAO = fineDAO;
         this.userDAO = userDAO;
+        this.bookRecordDAO = bookRecordDAO;
     }
 
     // 1. Get all fines for a user (don't support individual fine display).
@@ -153,6 +157,15 @@ public class FineService {
         User subjectUser = userDAO.findById(subjectUserID);
         if (subjectUser == null) {
             throw new IllegalArgumentException("Subject user not found with ID: " + subjectUserID);
+        }
+
+        // Validate that the loan exists and belongs to the subject user.
+        BookRecord loan = bookRecordDAO.findById(loanID);
+        if (loan == null) {
+            throw new IllegalArgumentException("Loan not found with ID: " + loanID);
+        }
+        if (loan.getUserID() != subjectUserID) {
+            throw new IllegalArgumentException("Loan " + loanID + " does not belong to user " + subjectUserID);
         }
 
         // Call the Fine constructor.

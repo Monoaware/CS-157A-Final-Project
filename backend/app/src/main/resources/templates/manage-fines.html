@@ -487,7 +487,12 @@
 
         fines.forEach(fine => {
             const statusClass = `status-${fine.status.toLowerCase()}`;
-            const createdDate = fine.createdAt ? new Date(fine.createdAt).toLocaleDateString() : 'N/A';
+            // Format the fine date (fineDate from backend)
+            let createdDate = 'N/A';
+            if (fine.fineDate) {
+                const date = new Date(fine.fineDate);
+                createdDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+            }
             
             const tr = document.createElement("tr");
             tr.innerHTML = `
