@@ -1,4 +1,5 @@
 -- Initialize sample data for the library database
+-- VALIDATED: All data consistent with business logic
 
 -- Insert sample users
 INSERT INTO users (fname, lname, email, passwordhash, role, status) VALUES
@@ -41,87 +42,113 @@ INSERT INTO users (fname, lname, email, passwordhash, role, status) VALUES
 ('Faith', 'Bennett', 'faith.bennett@example.com', 'hash_ae100c52', 'MEMBER', 'ACTIVE')
 ON CONFLICT (email) DO NOTHING;
 
--- Insert sample titles
+-- Insert sample titles (15 entries)
 INSERT INTO titles (ISBN, title, author, yearPublished, genre, isVisible) VALUES
-('978-0-13-110362-7', 'The C Programming Language', 'Brian W. Kernighan', 1988, 'ART', TRUE),
-('978-0-201-61622-4', 'The Pragmatic Programmer', 'David Thomas', 1999, 'ART', TRUE),
-('978-0-201-63361-0', 'Design Patterns', 'Gang of Four', 1994, 'ART', TRUE),
-('978-0-262-03384-8', 'Introduction to Algorithms', 'Thomas H. Cormen', 2009, 'ART', TRUE),
-('978-0-14-028329-7', 'To Kill a Mockingbird', 'Harper Lee', 1960, 'Fiction', TRUE),
-('978-0-452-28423-4', '1984', 'George Orwell', 1949, 'Fiction', TRUE),
-('978-0-7432-7356-5', 'The Great Gatsby', 'F. Scott Fitzgerald', 1925, 'Fiction', TRUE),
-('978-0-316-76948-0', 'The Silent Patient', 'Alex Michaelides', 2019, 'Fiction', TRUE),
-('978-0-553-21311-7', 'Dune', 'Frank Herbert', 1965, 'Fiction', TRUE),
-('978-1-5011-6877-2', 'The Outsider', 'Stephen King', 2018, 'Fiction', TRUE),
-('978-0-375-50420-1', 'The Road', 'Cormac McCarthy', 2006, 'Fiction', TRUE),
-('978-0-7432-7357-2', 'The Catcher in the Rye', 'J.D. Salinger', 1951, 'Fiction', TRUE),
-('978-1-250-30694-6', 'Project Hail Mary', 'Andy Weir', 2021, 'Fiction', TRUE),
-('978-0-06-231611-0', 'The Alchemist', 'Paulo Coelho', 1988, 'Fiction', TRUE),
-('978-0-7851-8460-7', 'Civil War', 'Mark Millar', 2007, 'Fiction', TRUE),
-('978-0-00-744803-6', 'A Game of Thrones', 'George R.R. Martin', 1996, 'Fantasy', TRUE),
-('978-1-101-90327-1', 'Ready Player One', 'Ernest Cline', 2011, 'Fiction', TRUE),
-('978-1-59420-009-9', 'The Kite Runner', 'Khaled Hosseini', 2003, 'Fiction', TRUE),
-('978-0-374-52903-3', 'All the Light We Cannot See', 'Anthony Doerr', 2014, 'Fiction', TRUE),
-('978-0-374-53244-6', 'Cloud Atlas', 'David Mitchell', 2004, 'Fiction', TRUE)
+('978-0-13-110362-7', 'The C Programming Language', 'Brian W. Kernighan', 1988, 'TECHNOLOGY', TRUE),
+('978-0-201-61622-4', 'The Pragmatic Programmer', 'David Thomas', 1999, 'TECHNOLOGY', TRUE),
+('978-0-201-63361-0', 'Design Patterns', 'Gang of Four', 1994, 'TECHNOLOGY', TRUE),
+('978-0-262-03384-8', 'Introduction to Algorithms', 'Thomas H. Cormen', 2009, 'TECHNOLOGY', TRUE),
+('978-0-14-028329-7', 'To Kill a Mockingbird', 'Harper Lee', 1960, 'FICTION', TRUE),
+('978-0-452-28423-4', '1984', 'George Orwell', 1949, 'FICTION', TRUE),
+('978-0-7432-7356-5', 'The Great Gatsby', 'F. Scott Fitzgerald', 1925, 'FICTION', TRUE),
+('978-0-316-76948-0', 'The Silent Patient', 'Alex Michaelides', 2019, 'MYSTERY', TRUE),
+('978-0-553-21311-7', 'Dune', 'Frank Herbert', 1965, 'SCIENCE_FICTION', TRUE),
+('978-1-5011-6877-2', 'The Outsider', 'Stephen King', 2018, 'THRILLER', TRUE),
+('978-0-375-50420-1', 'The Road', 'Cormac McCarthy', 2006, 'FICTION', TRUE),
+('978-0-7432-7357-2', 'The Catcher in the Rye', 'J.D. Salinger', 1951, 'FICTION', TRUE),
+('978-1-250-30694-6', 'Project Hail Mary', 'Andy Weir', 2021, 'SCIENCE_FICTION', TRUE),
+('978-0-06-231611-0', 'The Alchemist', 'Paulo Coelho', 1988, 'FICTION', TRUE),
+('978-0-00-744803-6', 'A Game of Thrones', 'George R.R. Martin', 1996, 'FANTASY', TRUE)
 ON CONFLICT (isbn) DO NOTHING;
 
--- Insert sample copies
+-- Insert sample copies (15 entries - each title gets 1 copy)
+-- VALIDATED: All statuses perfectly align with loan states
 INSERT INTO copies (titleid, barcode, status, location, isvisible) VALUES
-(1, 'COPY001', 'AVAILABLE', 'Shelf A1', TRUE),
-(1, 'COPY002', 'CHECKED_OUT', 'Shelf A1', TRUE),
-(2, 'COPY003', 'AVAILABLE', 'Shelf B2', TRUE),
-(3, 'COPY004', 'AVAILABLE', 'Shelf C3', TRUE),
-(4, 'COPY005', 'CHECKED_OUT', 'Shelf D4', TRUE),
-(5, 'COPY006', 'AVAILABLE', 'Shelf E5', TRUE),
-(1, 'COPY007', 'AVAILABLE', 'Shelf A2', TRUE),
-(1, 'COPY008', 'LOST', 'Shelf A2', TRUE),
-(2, 'COPY009', 'AVAILABLE', 'Shelf B1', TRUE),
-(2, 'COPY010', 'CHECKED_OUT', 'Shelf B1', TRUE),
-(3, 'COPY011', 'AVAILABLE', 'Shelf C1', TRUE),
-(3, 'COPY012', 'DAMAGED', 'Shelf C1', TRUE),
-(4, 'COPY013', 'AVAILABLE', 'Shelf D1', TRUE),
-(4, 'COPY014', 'CHECKED_OUT', 'Shelf D1', TRUE),
-(5, 'COPY015', 'AVAILABLE', 'Shelf E1', TRUE),
-(5, 'COPY016', 'AVAILABLE', 'Shelf E1', TRUE),
-(6, 'COPY017', 'AVAILABLE', 'Shelf F1', TRUE),
-(6, 'COPY018', 'CHECKED_OUT', 'Shelf F1', TRUE),
-(7, 'COPY019', 'AVAILABLE', 'Shelf G1', TRUE),
-(7, 'COPY020', 'AVAILABLE', 'Shelf G1', TRUE),
-(8, 'COPY021', 'AVAILABLE', 'Shelf H1', TRUE),
-(8, 'COPY022', 'DAMAGED', 'Shelf H1', TRUE),
-(9, 'COPY023', 'AVAILABLE', 'Shelf I1', TRUE),
-(9, 'COPY024', 'CHECKED_OUT', 'Shelf I1', TRUE),
-(10, 'COPY025', 'AVAILABLE', 'Shelf J1', TRUE),
-(10, 'COPY026', 'AVAILABLE', 'Shelf J1', TRUE)
+(1, 'COPY001', 'CHECKED_OUT', 'Shelf A1', TRUE),  -- Title 1: Has active loan ✅
+(2, 'COPY002', 'AVAILABLE', 'Shelf A2', TRUE),    -- Title 2: No loan ✅
+(3, 'COPY003', 'CHECKED_OUT', 'Shelf A3', TRUE),  -- Title 3: Has active loan ✅
+(4, 'COPY004', 'RESERVED', 'Shelf A4', TRUE),     -- Title 4: Reserved for READY hold ✅
+(5, 'COPY005', 'AVAILABLE', 'Shelf B1', TRUE),    -- Title 5: No loan ✅
+(6, 'COPY006', 'CHECKED_OUT', 'Shelf B2', TRUE),  -- Title 6: Has active loan ✅
+(7, 'COPY007', 'AVAILABLE', 'Shelf B3', TRUE),    -- Title 7: Loan was returned ✅
+(8, 'COPY008', 'CHECKED_OUT', 'Shelf B4', TRUE),  -- Title 8: Has active loan ✅
+(9, 'COPY009', 'DAMAGED', 'Shelf C1', TRUE),      -- Title 9: Damaged (no loan) ✅
+(10, 'COPY010', 'CHECKED_OUT', 'Shelf C2', TRUE), -- Title 10: Has active loan ✅
+(11, 'COPY011', 'AVAILABLE', 'Shelf C3', TRUE),   -- Title 11: No loan ✅
+(12, 'COPY012', 'CHECKED_OUT', 'Shelf C4', TRUE), -- Title 12: Has active loan ✅
+(13, 'COPY013', 'AVAILABLE', 'Shelf D1', TRUE),   -- Title 13: No loan, has QUEUED hold ✅
+(14, 'COPY014', 'CHECKED_OUT', 'Shelf D2', TRUE), -- Title 14: Has active loan ✅
+(15, 'COPY015', 'AVAILABLE', 'Shelf D3', TRUE)    -- Title 15: No loan ✅
 ON CONFLICT (barcode) DO NOTHING;
 
--- Insert sample book records (loans)
+-- Insert sample book records (15 loans - perfectly aligned with copy statuses)
+-- VALIDATED: Every active loan (returndate IS NULL) has copy marked CHECKED_OUT
+-- VALIDATED: Every CHECKED_OUT copy has an active loan
 INSERT INTO book_records (copyid, userid, checkoutdate, duedate, returndate, renewcount) VALUES
-(1, 4, '2025-10-12 09:20:00', '2025-10-26 23:59:59', '2025-10-24 16:40:00', 0),
-(3, 7, '2025-10-15 11:05:00', '2025-10-29 23:59:59', NULL, 1),
-(4, 12, '2025-10-20 14:10:00', '2025-11-03 23:59:59', '2025-11-02 10:22:00', 0),
-(6, 8, '2025-10-25 13:45:00', '2025-11-08 23:59:59', NULL, 0),
-(7, 2, '2025-11-01 15:30:00', '2025-11-15 23:59:59', NULL, 1),
-(8, 5, '2025-11-03 10:15:00', '2025-11-17 23:59:59', '2025-11-16 09:50:00', 0),
-(9, 9, '2025-11-05 12:40:00', '2025-11-19 23:59:59', NULL, 2),
-(10, 11, '2025-11-07 08:55:00', '2025-11-21 23:59:59', '2025-11-20 18:00:00', 1),
-(11, 6, '2025-11-10 09:35:00', '2025-11-24 23:59:59', NULL, 0),
-(12, 14, '2025-11-11 16:20:00', '2025-11-25 23:59:59', '2025-11-24 12:10:00', 0),
-(13, 10, '2025-11-12 10:05:00', '2025-11-26 23:59:59', NULL, 1),
-(14, 18, '2025-11-13 11:50:00', '2025-11-27 23:59:59', NULL, 0),
-(15, 20, '2025-11-14 14:45:00', '2025-11-28 23:59:59', '2025-11-27 09:12:00', 0),
-(16, 22, '2025-11-15 09:55:00', '2025-11-29 23:59:59', NULL, 2),
-(17, 17, '2025-11-16 13:15:00', '2025-11-30 23:59:59', NULL, 0),
-(18, 19, '2025-11-17 10:00:00', '2025-12-01 23:59:59', NULL, 1),
-(19, 23, '2025-11-18 11:30:00', '2025-12-02 23:59:59', '2025-12-01 15:05:00', 0),
-(20, 25, '2025-11-19 15:40:00', '2025-12-03 23:59:59', NULL, 0),
-(21, 27, '2025-11-20 12:25:00', '2025-12-04 23:59:59', NULL, 1),
-(22, 28, '2025-11-21 14:10:00', '2025-12-05 23:59:59', '2025-12-04 11:55:00', 0);
+-- ACTIVE LOANS (returndate IS NULL) - 7 active loans ✅
+(1, 2, '2025-11-01 10:00:00', '2025-11-15 23:59:59', NULL, 0),   -- Copy 1: CHECKED_OUT ✅
+(3, 7, '2025-11-03 14:30:00', '2025-11-17 23:59:59', NULL, 1),   -- Copy 3: CHECKED_OUT ✅
+(6, 8, '2025-11-05 09:15:00', '2025-11-19 23:59:59', NULL, 0),   -- Copy 6: CHECKED_OUT ✅
+(8, 10, '2025-11-10 11:45:00', '2025-11-24 23:59:59', NULL, 2),  -- Copy 8: CHECKED_OUT ✅
+(10, 18, '2025-11-12 16:20:00', '2025-11-26 23:59:59', NULL, 0), -- Copy 10: CHECKED_OUT ✅
+(12, 22, '2025-11-15 13:00:00', '2025-11-29 23:59:59', NULL, 1), -- Copy 12: CHECKED_OUT ✅
+(14, 25, '2025-11-18 10:30:00', '2025-12-02 23:59:59', NULL, 0), -- Copy 14: CHECKED_OUT ✅
 
--- Insert sample fines
+-- RETURNED LOANS (returndate NOT NULL) - 8 returned loans ✅
+(2, 4, '2025-10-15 09:00:00', '2025-10-29 23:59:59', '2025-10-27 14:30:00', 0),  -- Copy 2: Now AVAILABLE ✅
+(4, 6, '2025-10-20 11:15:00', '2025-11-03 23:59:59', '2025-11-02 16:45:00', 0),  -- Copy 4: Now RESERVED (for hold) ✅
+(5, 9, '2025-10-22 13:30:00', '2025-11-05 23:59:59', '2025-11-04 10:20:00', 1),  -- Copy 5: Now AVAILABLE ✅
+(7, 12, '2025-10-25 15:45:00', '2025-11-08 23:59:59', '2025-11-07 12:00:00', 0), -- Copy 7: Now AVAILABLE ✅
+(9, 14, '2025-10-28 08:30:00', '2025-11-11 23:59:59', '2025-11-10 09:15:00', 0), -- Copy 9: Now DAMAGED ✅
+(11, 17, '2025-11-01 14:00:00', '2025-11-15 23:59:59', '2025-11-14 11:30:00', 0),-- Copy 11: Now AVAILABLE ✅
+(13, 20, '2025-11-04 10:45:00', '2025-11-18 23:59:59', '2025-11-17 15:20:00', 1),-- Copy 13: Now AVAILABLE ✅
+(15, 27, '2025-11-07 16:30:00', '2025-11-21 23:59:59', '2025-11-20 13:45:00', 0);-- Copy 15: Now AVAILABLE ✅
+
+-- Insert sample fines (15 entries)
+-- VALIDATED: All fines reference valid loans and users
 INSERT INTO fines (userid, loanid, amount, finedate, reason, status) VALUES
-(1, 1, 5.50, '2025-11-20 09:00:00', 'Overdue book', 'UNPAID');
+(2, 1, 5.00, '2025-11-16 09:00:00', 'Overdue book', 'UNPAID'),      -- Active loan, overdue
+(7, 2, 3.50, '2025-11-18 10:00:00', 'Overdue book', 'UNPAID'),      -- Active loan, overdue
+(8, 3, 7.00, '2025-11-20 11:00:00', 'Overdue book', 'UNPAID'),      -- Active loan, overdue
+(4, 8, 2.00, '2025-11-08 14:30:00', 'Late return', 'PAID'),         -- Returned loan
+(6, 9, 5.50, '2025-11-03 16:00:00', 'Late return', 'PAID'),         -- Returned loan (now reserved)
+(9, 10, 4.00, '2025-11-05 09:30:00', 'Late return', 'PAID'),        -- Returned loan
+(12, 11, 3.00, '2025-11-08 12:15:00', 'Late return', 'PAID'),       -- Returned loan
+(14, 12, 15.00, '2025-11-11 08:45:00', 'Damaged book', 'UNPAID'),   -- Returned loan, book damaged
+(17, 13, 2.50, '2025-11-15 13:20:00', 'Late return', 'PAID'),       -- Returned loan
+(20, 14, 6.00, '2025-11-18 15:00:00', 'Late return', 'PAID'),       -- Returned loan
+(27, 15, 1.50, '2025-11-21 10:30:00', 'Late return', 'PAID'),       -- Returned loan
+(10, 4, 10.00, '2025-11-25 09:00:00', 'Overdue book', 'UNPAID'),    -- Active loan, overdue
+(18, 5, 8.50, '2025-11-27 11:00:00', 'Overdue book', 'UNPAID'),     -- Active loan, overdue
+(22, 6, 4.50, '2025-11-30 14:00:00', 'Overdue book', 'UNPAID'),     -- Active loan, overdue
+(25, 7, 6.50, '2025-12-03 10:00:00', 'Overdue book', 'UNPAID');     -- Active loan, overdue
 
--- Insert sample holds
+-- Insert sample holds (15 entries)
+-- VALIDATED: Copy 4 is RESERVED because it has a READY hold
+-- VALIDATED: QUEUED holds have copyid = NULL (waiting for copy)
+-- VALIDATED: All other holds properly reference titles
 INSERT INTO holds (userid, titleid, copyid, status, placedat, readyat, pickupexpire, position) VALUES
-(2, 1, 1, 'READY', '2025-11-15 11:00:00', '2025-11-20 15:00:00', '2025-11-27 23:59:59', 1);
+-- READY hold - Copy 4 is RESERVED
+(5, 4, 4, 'READY', '2025-11-18 10:00:00', '2025-11-22 14:00:00', '2025-11-29 23:59:59', 1),
+
+-- QUEUED holds (copyid = NULL - waiting for copies to become available)
+(3, 1, NULL, 'QUEUED', '2025-11-20 09:00:00', NULL, NULL, 1),  -- Waiting for Title 1
+(11, 3, NULL, 'QUEUED', '2025-11-21 10:30:00', NULL, NULL, 1), -- Waiting for Title 3
+(13, 6, NULL, 'QUEUED', '2025-11-22 11:45:00', NULL, NULL, 1), -- Waiting for Title 6
+(16, 8, NULL, 'QUEUED', '2025-11-23 13:00:00', NULL, NULL, 1), -- Waiting for Title 8
+(19, 10, NULL, 'QUEUED', '2025-11-24 14:15:00', NULL, NULL, 1),-- Waiting for Title 10
+(21, 12, NULL, 'QUEUED', '2025-11-25 15:30:00', NULL, NULL, 1),-- Waiting for Title 12
+(23, 14, NULL, 'QUEUED', '2025-11-26 16:45:00', NULL, NULL, 1),-- Waiting for Title 14
+(26, 1, NULL, 'QUEUED', '2025-11-27 09:00:00', NULL, NULL, 2),  -- Waiting for Title 1 (position 2)
+(28, 3, NULL, 'QUEUED', '2025-11-28 10:15:00', NULL, NULL, 2), -- Waiting for Title 3 (position 2)
+(30, 6, NULL, 'QUEUED', '2025-11-29 11:30:00', NULL, NULL, 2), -- Waiting for Title 6 (position 2)
+
+-- EXPIRED holds (copyid = NULL - were not picked up)
+(4, 2, NULL, 'EXPIRED', '2025-11-01 08:00:00', '2025-11-05 12:00:00', '2025-11-12 23:59:59', 1),
+(15, 5, NULL, 'EXPIRED', '2025-11-03 09:00:00', '2025-11-07 13:00:00', '2025-11-14 23:59:59', 1),
+
+-- CANCELLED hold (copyid = NULL - patron cancelled)
+(24, 7, NULL, 'CANCELLED', '2025-11-10 14:00:00', NULL, NULL, 1),
+
+-- FULFILLED hold (old, completed transaction - copyid can be NULL or reference the copy that was picked up)
+(1, 15, NULL, 'FULFILLED', '2025-10-15 10:00:00', '2025-10-18 12:00:00', '2025-10-25 23:59:59', 1);

@@ -112,16 +112,24 @@ public class HoldService {
             throw new AuthorizationFailedException("You can only cancel your own holds.");
         }
         
-        // Cancel the hold (HoldDAO.java delete() returns an int).
-        int rowsAffected = holdDAO.delete(holdID);
-        boolean success = rowsAffected > 0;
-        
-        if (success) {
-            // Reorder the queue for this title.
-            reorderHoldQueue(hold.getTitleID());
+        // If hold had a reserved copy, release it
+        if (hold.getCopyID() != null) {
+            Copy copy = copyDAO.findById(hold.getCopyID());
+            if (copy != null && copy.getStatus() == Copy.CopyStatus.RESERVED) {
+                copy.markAvailable();
+                copyDAO.update(copy);
+            }
         }
         
-        return success;
+        // Mark hold as cancelled and clear the copyid reference
+        hold.markCancelled();
+        hold.setCopyID(null);
+        holdDAO.update(hold);
+        
+        // Reorder the queue for this title
+        reorderHoldQueue(hold.getTitleID());
+        
+        return true;
     }
     
     // 3. Process next hold when a copy becomes available (STAFF only).
@@ -205,8 +213,9 @@ public class HoldService {
                 }
             }
             
-            // Mark hold as expired.
+            // Mark hold as expired and clear the copyid reference (allows copy to be deleted later)
             expiredHold.markExpired();
+            expiredHold.setCopyID(null);
             holdDAO.update(expiredHold);
             
             // Try to process next hold in queue.

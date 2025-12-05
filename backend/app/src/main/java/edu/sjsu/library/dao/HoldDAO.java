@@ -22,7 +22,7 @@ public class HoldDAO {
                 id SERIAL PRIMARY KEY,
                 userid INTEGER NOT NULL,
                 titleid INTEGER NOT NULL,
-                copyid INTEGER NOT NULL,
+                copyid INTEGER NULL,
                 status VARCHAR(20) NOT NULL,
                 placedat TIMESTAMP NOT NULL,
                 readyat TIMESTAMP NULL,
@@ -34,11 +34,14 @@ public class HoldDAO {
     }
 
     private Hold mapRow(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
+        // Handle nullable copyid
+        Integer copyId = rs.getObject("copyid") != null ? rs.getInt("copyid") : null;
+        
         return new Hold(
             rs.getInt("id"),
             rs.getInt("userid"),
             rs.getInt("titleid"),
-            rs.getInt("copyid"),
+            copyId,
             Hold.HoldStatus.valueOf(rs.getString("status").trim().toUpperCase()),
             rs.getTimestamp("placedat").toLocalDateTime(),
             rs.getTimestamp("readyat") != null ? rs.getTimestamp("readyat").toLocalDateTime() : null,
@@ -182,5 +185,27 @@ public class HoldDAO {
             "SELECT * FROM holds WHERE status = 'READY' AND pickupexpire < NOW()",
             this::mapRow
         );
+    }
+
+    // Find holds by copy (to check if copy is referenced by any hold).
+    public List<Hold> findByCopy(int copyID) {
+        return jdbc.query(
+            "SELECT * FROM holds WHERE copyid = ?",
+            this::mapRow,
+            copyID
+        );
+    }
+
+    // Find active holds by copy (QUEUED or READY).
+    public Hold findActiveHoldByCopy(int copyID) {
+        try {
+            return jdbc.queryForObject(
+                "SELECT * FROM holds WHERE copyid = ? AND status IN ('QUEUED', 'READY') LIMIT 1",
+                this::mapRow,
+                copyID
+            );
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            return null;
+        }
     }
 }

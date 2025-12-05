@@ -2,9 +2,13 @@ package edu.sjsu.library.services;
 
 import edu.sjsu.library.dao.CopyDAO;
 import edu.sjsu.library.dao.TitleDAO;
+import edu.sjsu.library.dao.BookRecordDAO;
+import edu.sjsu.library.dao.HoldDAO;
 import edu.sjsu.library.models.Copy;
 import edu.sjsu.library.models.Title;
 import edu.sjsu.library.models.User;
+import edu.sjsu.library.models.BookRecord;
+import edu.sjsu.library.models.Hold;
 import edu.sjsu.library.utils.AuthorizationUtils;
 import edu.sjsu.library.exceptions.AuthorizationFailedException;
 
@@ -20,11 +24,15 @@ public class CopyService {
 
     private final CopyDAO copyDAO;
     private final TitleDAO titleDAO;
+    private final BookRecordDAO bookRecordDAO;
+    private final HoldDAO holdDAO;
     private final AuthorizationUtils authUtils;
 
-    public CopyService(CopyDAO copyDAO, TitleDAO titleDAO, AuthorizationUtils authUtils) {
+    public CopyService(CopyDAO copyDAO, TitleDAO titleDAO, BookRecordDAO bookRecordDAO, HoldDAO holdDAO, AuthorizationUtils authUtils) {
         this.copyDAO = copyDAO;
         this.titleDAO = titleDAO;
+        this.bookRecordDAO = bookRecordDAO;
+        this.holdDAO = holdDAO;
         this.authUtils = authUtils;
     }
 
@@ -85,6 +93,36 @@ public class CopyService {
         Copy existing = copyDAO.findById(copyID);
         if (existing == null) {
             throw new IllegalArgumentException("Copy not found with ID: " + copyID);
+        }
+
+        // Check if there are any active holds (QUEUED or READY) referencing this specific copy
+        // Note: Expired/Cancelled holds should have copyid = NULL, so they won't block deletion
+        Hold activeHold = holdDAO.findActiveHoldByCopy(copyID);
+        if (activeHold != null) {
+            throw new IllegalStateException(
+                "Cannot delete copy: it has an active hold (Hold ID: " + activeHold.getHoldID() + ", Status: " + activeHold.getStatus() + "). " +
+                "Cancel or fulfill the hold before deleting the copy."
+            );
+        }
+
+        // Check if there are any active loans (unreturned) for this copy
+        BookRecord activeLoan = bookRecordDAO.findActiveByCopy(copyID);
+        if (activeLoan != null) {
+            throw new IllegalStateException(
+                "Cannot delete copy: it has an active loan (Loan ID: " + activeLoan.getLoanID() + "). " +
+                "The copy must be returned before it can be deleted."
+            );
+        }
+
+        // Prevent deletion of copies that are in use or problematic
+        Copy.CopyStatus status = existing.getStatus();
+        if (status == Copy.CopyStatus.CHECKED_OUT || 
+            status == Copy.CopyStatus.LOST || 
+            status == Copy.CopyStatus.RESERVED) {
+            throw new IllegalStateException(
+                "Cannot delete copy: status is " + status + ". " +
+                "Only AVAILABLE, DAMAGED, or MAINTENANCE copies can be deleted."
+            );
         }
 
         int rowsAffected = copyDAO.delete(copyID);

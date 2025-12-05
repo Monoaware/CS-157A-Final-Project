@@ -153,6 +153,80 @@
         .message.info {
             color: #7f8c8d;
         }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 30px;
+            border: 1px solid #888;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 20px;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: #000;
+        }
+        
+        .modal-content h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .modal-content label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .modal-content input,
+        .modal-content select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
     </style>
 </head>
 <body>
@@ -252,6 +326,42 @@
     </div>
 </main>
 
+<!-- Edit Copy Modal (Staff Only) -->
+<div id="editCopyModal" class="modal" th:if="${isStaff}">
+    <div class="modal-content">
+        <span class="close" id="closeEditModal">&times;</span>
+        <h2>Edit Copy</h2>
+        <form id="editCopyForm">
+            <input type="hidden" id="editCopyId" />
+            <input type="hidden" id="editTitleId" />
+            <input type="hidden" id="editVisible" />
+            
+            <label for="editBarcode">Barcode:</label>
+            <input type="text" id="editBarcode" required />
+            
+            <label for="editLocation">Location:</label>
+            <input type="text" id="editLocation" required />
+            
+            <label for="editStatus">Status:</label>
+            <select id="editStatus" required>
+                <option value="AVAILABLE">AVAILABLE</option>
+                <option value="CHECKED_OUT">CHECKED_OUT</option>
+                <option value="RESERVED">RESERVED</option>
+                <option value="LOST">LOST</option>
+                <option value="DAMAGED">DAMAGED</option>
+                <option value="MAINTENANCE">MAINTENANCE</option>
+            </select>
+            
+            <p id="editCopyMessage" class="message"></p>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="submit" class="btn-primary">Save Changes</button>
+                <button type="button" class="btn-secondary" id="cancelEditBtn">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script th:inline="javascript">
     // Values from server
     const titleId = /*[[${title.titleID}]]*/ 0;
@@ -328,9 +438,10 @@
                     anyAvailable = true;
                 }
 
-                // Decide what action button to show (members only) – only checkout here
+                // Decide what action button to show
                 let actionHtml = "";
                 if (!isStaff) {
+                    // Member view: checkout buttons
                     if (isAvailable) {
                         actionHtml = `
                             <button class="btn-primary btn-action"
@@ -350,10 +461,29 @@
                             </button>`;
                     }
                 } else {
+                    // Staff view: edit and delete buttons
+                    const canDelete = (status !== "CHECKED_OUT" && status !== "LOST" && status !== "RESERVED");
                     actionHtml = `
-                        <button class="btn-primary" disabled>
-                            Members Only
-                        </button>`;
+                        <button class="btn-primary btn-action" 
+                                data-action="edit"
+                                data-copy-id="${c.copyID}"
+                                data-title-id="${c.titleID}"
+                                data-barcode="${barcode}"
+                                data-location="${location}"
+                                data-status="${status}"
+                                data-visible="${visible}"
+                                style="margin-right: 5px;">
+                            Edit
+                        </button>
+                        <button class="btn-action" 
+                                data-action="delete"
+                                data-copy-id="${c.copyID}"
+                                data-status="${status}"
+                                style="background-color: #dc3545; color: white;"
+                                ${!canDelete ? 'disabled' : ''}>
+                            Delete
+                        </button>
+                    `;
                 }
 
                 tr.innerHTML = `
@@ -465,7 +595,7 @@
         }
     }
 
-    // Handle checkout actions from the table
+    // Handle actions from the copies table
     document.getElementById("copiesTableBody").addEventListener("click", async (e) => {
         const btn = e.target.closest(".btn-action");
         if (!btn) return;
@@ -499,9 +629,71 @@
                 if (isStaff) {
                     await loadTitleHolds();
                 }
+            } else if (action === "edit") {
+                // Open edit modal with current copy data
+                const copyId = btn.dataset.copyId;
+                const titleId = btn.dataset.titleId;
+                const barcode = btn.dataset.barcode;
+                const location = btn.dataset.location;
+                const status = btn.dataset.status;
+                const visible = btn.dataset.visible;
+                
+                document.getElementById("editCopyId").value = copyId;
+                document.getElementById("editTitleId").value = titleId;
+                document.getElementById("editBarcode").value = barcode;
+                document.getElementById("editLocation").value = location;
+                document.getElementById("editStatus").value = status;
+                document.getElementById("editVisible").value = visible;
+                document.getElementById("editCopyMessage").textContent = "";
+                document.getElementById("editCopyMessage").className = "message";
+                
+                document.getElementById("editCopyModal").style.display = "block";
+            } else if (action === "delete") {
+                const copyId = btn.dataset.copyId;
+                const status = btn.dataset.status;
+                
+                if (status === "CHECKED_OUT" || status === "LOST" || status === "RESERVED") {
+                    msgBox.textContent = "Cannot delete copy with status: " + status;
+                    msgBox.classList.add("error");
+                    return;
+                }
+                
+                if (!confirm(`Are you sure you want to delete copy ${copyId}?`)) {
+                    return;
+                }
+                
+                const res = await fetch(`/api/copies/${copyId}`, {
+                    method: "DELETE"
+                });
+                
+                if (!res.ok) {
+                    let errorMsg = "Failed to delete copy. ";
+                    try {
+                        const errorText = await res.text();
+                        if (errorText) {
+                            errorMsg += errorText;
+                        } else {
+                            errorMsg += "It may have an active loan or invalid status.";
+                        }
+                    } catch (e) {
+                        errorMsg += "It may have an active loan or invalid status.";
+                    }
+                    msgBox.textContent = errorMsg;
+                    msgBox.classList.add("error");
+                    console.error("Delete failed:", res.status, res.statusText);
+                    return;
+                }
+                
+                msgBox.textContent = "Copy deleted successfully!";
+                msgBox.classList.add("success");
+                
+                await loadCopies();
+                if (isStaff) {
+                    await loadTitleHolds();
+                }
             }
         } catch (err) {
-            console.error("Error during checkout:", err);
+            console.error("Error during action:", err);
             msgBox.textContent = "Network error while performing action.";
             msgBox.classList.add("error");
         }
@@ -561,6 +753,102 @@
                 console.error("Error placing hold:", err);
                 msgBox.textContent = "Network error while placing hold.";
                 msgBox.classList.add("error");
+            }
+        });
+    }
+
+    // Staff only: Edit copy modal handling
+    if (isStaff) {
+        const editModal = document.getElementById("editCopyModal");
+        const closeEditModal = document.getElementById("closeEditModal");
+        const cancelEditBtn = document.getElementById("cancelEditBtn");
+        const editCopyForm = document.getElementById("editCopyForm");
+        
+        closeEditModal.onclick = () => {
+            editModal.style.display = "none";
+        };
+        
+        cancelEditBtn.onclick = () => {
+            editModal.style.display = "none";
+        };
+        
+        window.onclick = (event) => {
+            if (event.target === editModal) {
+                editModal.style.display = "none";
+            }
+        };
+        
+        editCopyForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            
+            const copyId = document.getElementById("editCopyId").value;
+            const titleIdVal = document.getElementById("editTitleId").value;
+            const barcode = document.getElementById("editBarcode").value.trim();
+            const location = document.getElementById("editLocation").value.trim();
+            const status = document.getElementById("editStatus").value;
+            const visibleVal = document.getElementById("editVisible").value;
+            const editMsgBox = document.getElementById("editCopyMessage");
+            
+            editMsgBox.textContent = "";
+            editMsgBox.className = "message";
+            
+            if (!barcode || !location) {
+                editMsgBox.textContent = "Barcode and Location are required.";
+                editMsgBox.classList.add("error");
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/api/copies/${copyId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        copyID: parseInt(copyId),
+                        titleID: parseInt(titleIdVal),
+                        barcode: barcode,
+                        location: location,
+                        status: status,
+                        visible: visibleVal === "true"
+                    })
+                });
+                
+                if (!res.ok) {
+                    let errorMsg = "Failed to update copy. ";
+                    try {
+                        const errorText = await res.text();
+                        if (errorText) {
+                            errorMsg += errorText;
+                        } else {
+                            errorMsg += "Please check the values and try again.";
+                        }
+                    } catch (e) {
+                        errorMsg += "Please check the values and try again.";
+                    }
+                    editMsgBox.textContent = errorMsg;
+                    editMsgBox.classList.add("error");
+                    console.error("Update failed:", res.status, res.statusText);
+                    return;
+                }
+                
+                editMsgBox.textContent = "Copy updated successfully!";
+                editMsgBox.classList.add("success");
+                
+                // Close modal after short delay
+                setTimeout(() => {
+                    editModal.style.display = "none";
+                    const mainMsgBox = document.getElementById("copiesMessage");
+                    mainMsgBox.textContent = "Copy updated successfully!";
+                    mainMsgBox.className = "message success";
+                }, 1000);
+                
+                // Refresh copies list
+                await loadCopies();
+                await loadTitleHolds();
+                
+            } catch (err) {
+                console.error("Error updating copy:", err);
+                editMsgBox.textContent = "Network error while updating copy.";
+                editMsgBox.classList.add("error");
             }
         });
     }

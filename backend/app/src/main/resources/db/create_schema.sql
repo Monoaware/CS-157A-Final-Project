@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS titles (
     title VARCHAR(255) NOT NULL,
     author VARCHAR(255) NOT NULL,
     yearPublished INT NOT NULL,
-    genre VARCHAR(100),
-    isVisible BOOLEAN DEFAULT TRUE
+    genre VARCHAR(100) NOT NULL,
+    isVisible BOOLEAN DEFAULT TRUE NOT NULL
 );
 
 -- Copies table
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS copies (
     titleid INTEGER NOT NULL REFERENCES titles(id),
     barcode VARCHAR(100) UNIQUE NOT NULL,
     status VARCHAR(20) NOT NULL,
-    location VARCHAR(100),
+    location VARCHAR(100) NOT NULL,
     isvisible BOOLEAN NOT NULL
 );
 

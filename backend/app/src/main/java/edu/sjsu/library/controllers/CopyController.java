@@ -76,28 +76,42 @@ public class CopyController {
     // Update copy (STAFF ONLY).
     @PutMapping("/{copyID}")
     @ResponseBody
-    public ResponseEntity<Copy> updateCopy(
+    public ResponseEntity<?> updateCopy(
             @PathVariable int copyID,
             @RequestBody Copy updatedCopy,
             HttpServletRequest request) {
-        int requestorID = getRequestorId(request);
-        authUtils.validateStaffAccess(requestorID); // Staff only.
-        updatedCopy.setCopyID(copyID);
-        Copy copy = copyService.updateCopy(updatedCopy, requestorID);
-        return ResponseEntity.ok(copy);
+        try {
+            int requestorID = getRequestorId(request);
+            authUtils.validateStaffAccess(requestorID); // Staff only.
+            updatedCopy.setCopyID(copyID);
+            Copy copy = copyService.updateCopy(updatedCopy, requestorID);
+            return ResponseEntity.ok(copy);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Internal server error: " + e.getMessage());
+        }
     }
 
     // DELETE /api/copies/{copyID}
     // Delete copy (STAFF ONLY).
     @DeleteMapping("/{copyID}")
     @ResponseBody
-    public ResponseEntity<Void> deleteCopy(
+    public ResponseEntity<?> deleteCopy(
             @PathVariable int copyID,
             HttpServletRequest request) {
-        int requestorID = getRequestorId(request);
-        authUtils.validateStaffAccess(requestorID); // Staff only.
-        boolean success = copyService.deleteCopy(copyID, requestorID);
-        return success ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+        try {
+            int requestorID = getRequestorId(request);
+            authUtils.validateStaffAccess(requestorID); // Staff only.
+            boolean success = copyService.deleteCopy(copyID, requestorID);
+            return success ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Internal server error: " + e.getMessage());
+        }
     }
 
     // GET /api/copies/{copyID}/available
