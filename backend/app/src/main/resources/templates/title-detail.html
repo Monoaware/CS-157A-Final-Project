@@ -205,6 +205,12 @@
             color: #555;
         }
         
+        .modal-content label input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        
         .modal-content input,
         .modal-content select {
             width: 100%;
@@ -212,6 +218,10 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
+        }
+        
+        .modal-content input[type="checkbox"] {
+            width: auto;
         }
         
         .btn-secondary {
@@ -334,7 +344,6 @@
         <form id="editCopyForm">
             <input type="hidden" id="editCopyId" />
             <input type="hidden" id="editTitleId" />
-            <input type="hidden" id="editVisible" />
             
             <label for="editBarcode">Barcode:</label>
             <input type="text" id="editBarcode" required />
@@ -351,6 +360,11 @@
                 <option value="DAMAGED">DAMAGED</option>
                 <option value="MAINTENANCE">MAINTENANCE</option>
             </select>
+            
+            <label for="editVisible">
+                <input type="checkbox" id="editVisible" />
+                Visible to Members
+            </label>
             
             <p id="editCopyMessage" class="message"></p>
             
@@ -643,7 +657,7 @@
                 document.getElementById("editBarcode").value = barcode;
                 document.getElementById("editLocation").value = location;
                 document.getElementById("editStatus").value = status;
-                document.getElementById("editVisible").value = visible;
+                document.getElementById("editVisible").checked = (visible === true || visible === "true");
                 document.getElementById("editCopyMessage").textContent = "";
                 document.getElementById("editCopyMessage").className = "message";
                 
@@ -786,7 +800,7 @@
             const barcode = document.getElementById("editBarcode").value.trim();
             const location = document.getElementById("editLocation").value.trim();
             const status = document.getElementById("editStatus").value;
-            const visibleVal = document.getElementById("editVisible").value;
+            const visibleVal = document.getElementById("editVisible").checked;
             const editMsgBox = document.getElementById("editCopyMessage");
             
             editMsgBox.textContent = "";
@@ -808,7 +822,7 @@
                         barcode: barcode,
                         location: location,
                         status: status,
-                        visible: visibleVal === "true"
+                        visible: visibleVal
                     })
                 });
                 

@@ -6,10 +6,12 @@ package edu.sjsu.library.services;
 import edu.sjsu.library.dao.HoldDAO;
 import edu.sjsu.library.dao.TitleDAO;
 import edu.sjsu.library.dao.CopyDAO;
+import edu.sjsu.library.dao.BookRecordDAO;
 import edu.sjsu.library.models.Hold;
 import edu.sjsu.library.models.Title;
 import edu.sjsu.library.models.Copy;
 import edu.sjsu.library.models.User;
+import edu.sjsu.library.models.BookRecord;
 import edu.sjsu.library.utils.AuthorizationUtils;
 import edu.sjsu.library.exceptions.AuthorizationFailedException;
 
@@ -27,13 +29,15 @@ public class HoldService {
     private final HoldDAO holdDAO;
     private final TitleDAO titleDAO;
     private final CopyDAO copyDAO;
+    private final BookRecordDAO bookRecordDAO;
     private final AuthorizationUtils authUtils;
     
     // Constructor:
-    public HoldService(HoldDAO holdDAO, TitleDAO titleDAO, CopyDAO copyDAO, AuthorizationUtils authUtils) {
+    public HoldService(HoldDAO holdDAO, TitleDAO titleDAO, CopyDAO copyDAO, BookRecordDAO bookRecordDAO, AuthorizationUtils authUtils) {
         this.holdDAO = holdDAO;
         this.titleDAO = titleDAO;
         this.copyDAO = copyDAO;
+        this.bookRecordDAO = bookRecordDAO;
         this.authUtils = authUtils;
     }
     
@@ -76,8 +80,19 @@ public class HoldService {
             throw new IllegalArgumentException("You already have an active hold on this title.");
         }
         
-        // Check if there are available copies (if yes, they should check out instead).
+        // Check if user already has an active loan for any copy of this title
         List<Copy> allCopies = copyDAO.findByTitle(titleID);
+        for (Copy copy : allCopies) {
+            List<BookRecord> loansForCopy = bookRecordDAO.findByCopy(copy.getCopyID());
+            for (BookRecord loan : loansForCopy) {
+                // Check if this is an active loan (not returned) by the requesting user
+                if (loan.getUserID() == requestorID && loan.getReturnDate() == null) {
+                    throw new IllegalArgumentException("You already have an active loan for this title. Please return it before placing a hold.");
+                }
+            }
+        }
+        
+        // Check if there are available copies (if yes, they should check out instead).
         List<Copy> availableCopies = allCopies.stream()
             .filter(copy -> copy.getStatus() == Copy.CopyStatus.AVAILABLE)
             .collect(Collectors.toList());
@@ -295,8 +310,19 @@ public class HoldService {
             return false;
         }
         
-        // Check if copies are available (shouldn't place hold if available).
+        // Check if user already has an active loan for this title
         List<Copy> allCopies = copyDAO.findByTitle(titleID);
+        for (Copy copy : allCopies) {
+            List<BookRecord> loansForCopy = bookRecordDAO.findByCopy(copy.getCopyID());
+            for (BookRecord loan : loansForCopy) {
+                // If user has an active loan (not returned) for any copy of this title, they can't place a hold
+                if (loan.getUserID() == userID && loan.getReturnDate() == null) {
+                    return false;
+                }
+            }
+        }
+        
+        // Check if copies are available (shouldn't place hold if available).
         List<Copy> availableCopies = allCopies.stream()
             .filter(copy -> copy.getStatus() == Copy.CopyStatus.AVAILABLE)
             .collect(Collectors.toList());
