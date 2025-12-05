@@ -150,5 +150,5 @@ INSERT INTO holds (userid, titleid, copyid, status, placedat, readyat, pickupexp
 -- CANCELLED hold (copyid = NULL - patron cancelled)
 (24, 7, NULL, 'CANCELLED', '2025-11-10 14:00:00', NULL, NULL, 1),
 
--- FULFILLED hold (old, completed transaction - copyid can be NULL or reference the copy that was picked up)
-(1, 15, NULL, 'FULFILLED', '2025-10-15 10:00:00', '2025-10-18 12:00:00', '2025-10-25 23:59:59', 1);
+-- PICKED_UP hold (old, completed transaction - was picked up and checked out)
+(1, 15, NULL, 'PICKED_UP', '2025-10-15 10:00:00', '2025-10-18 12:00:00', '2025-10-25 23:59:59', 1);
